@@ -1,10 +1,23 @@
 var builder = WebApplication.CreateBuilder(args);
+// add cors to allow frontend to access backend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+app.UseCors("AllowFrontend");
+//health check endpoint
+app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
