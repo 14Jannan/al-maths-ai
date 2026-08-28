@@ -10,10 +10,10 @@ function App() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/health') // <-- unga backend port podunga
+    fetch('http://localhost:5xxx/api/health') // <-- replace with your actual backend port
       .then((res) => res.json())
       .then((data: HealthResponse) => setHealth(data))
-      .catch(() => setError('Backend-oda connect aaga mudiyala'))
+      .catch(() => setError('Could not connect to backend'))
   }, [])
 
   return (
