@@ -10,6 +10,8 @@ import { Dashboard } from './pages/Dashboard';
 import { Tutor } from './pages/Tutor';
 import { Topics } from './pages/Topics';
 import { ComingSoon } from './pages/ComingSoon';
+import { Pricing } from './pages/Pricing';
+import { Account } from './pages/Account';
 
 function App() {
   return (
@@ -18,7 +20,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/pricing" element={<ComingSoon title="Pricing" />} />
+        <Route path="/pricing" element={<Pricing />} />
 
         <Route
           path="/dashboard"
@@ -76,6 +78,14 @@ function App() {
             </AdminRoute>
           }
         />
+        <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <Account />
+              </ProtectedRoute>
+            }
+          />
       </Route>
     </Routes>
   );
