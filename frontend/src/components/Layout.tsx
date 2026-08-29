@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useAuth } from '../lib/useAuth';
+import { useAuth } from '../lib/use-auth';
 
 export function Layout() {
   const { isLoggedIn, logout } = useAuth();

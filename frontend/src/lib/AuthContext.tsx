@@ -1,22 +1,12 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import { apiFetch, setToken, clearToken, getToken } from './api';
 import { getRoleFromToken } from './jwt';
+import { AuthContext, type AuthContextValue } from './auth-context';
 
 interface AuthResponse {
   token: string;
   email: string;
 }
-
-interface AuthContextValue {
-  email: string | null;
-  isLoggedIn: boolean;
-  isAdmin: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 function computeIsAdmin(token: string | null): boolean {
   if (!token) return false;
@@ -70,12 +60,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used inside an AuthProvider');
-  }
-  return ctx;
 }
