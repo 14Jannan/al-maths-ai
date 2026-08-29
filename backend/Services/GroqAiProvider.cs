@@ -37,9 +37,13 @@ public class GroqAiProvider : IAiProvider
             "application/json");
 
         var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
         var responseBody = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception($"Groq API error ({response.StatusCode}): {responseBody}");
+        }
+
         using var doc = JsonDocument.Parse(responseBody);
 
         var reply = doc.RootElement
