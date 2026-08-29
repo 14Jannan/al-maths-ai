@@ -51,6 +51,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddControllers();
 
 builder.Services.AddScoped<backend.Services.TokenService>();
 
@@ -61,6 +62,7 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapControllers();
 
 app.UseCors("AllowFrontend");
 //health check endpoint
