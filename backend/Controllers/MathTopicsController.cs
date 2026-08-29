@@ -51,6 +51,7 @@ public class MathTopicsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(MathTopicDto dto)
     {
         var topic = new MathTopic
@@ -64,5 +65,38 @@ public class MathTopicsController : ControllerBase
 
         dto.Id = topic.Id;
         return CreatedAtAction(nameof(GetById), new { id = topic.Id }, dto);
+    }
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Update(int id, MathTopicDto dto)
+    {
+        var topic = await _context.MathTopics.FindAsync(id);
+        if (topic == null)
+        {
+            return NotFound();
+        }
+
+        topic.Name = dto.Name;
+        topic.Description = dto.Description;
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var topic = await _context.MathTopics.FindAsync(id);
+        if (topic == null)
+        {
+            return NotFound();
+        }
+
+        _context.MathTopics.Remove(topic);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 }
