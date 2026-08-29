@@ -13,6 +13,7 @@ import { ComingSoon } from './pages/ComingSoon';
 import { Pricing } from './pages/Pricing';
 import { Account } from './pages/Account';
 import { Papers } from './pages/Papers';
+import { Resources } from './pages/Resources';
 
 function App() {
   return (
@@ -95,6 +96,14 @@ function App() {
                 </ProtectedRoute>
             }
         />
+        <Route
+            path="/resources"
+            element={
+              <ProtectedRoute>
+                <Resources />
+              </ProtectedRoute>
+            }
+          />
       </Route>
     </Routes>
   );
