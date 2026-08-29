@@ -2,9 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { Math } from '../components/Math';
 
 const steps = [
-  { n: '01', title: 'Ask in English or Tamil', body: 'Type your question the way you\u2019d ask a teacher \u2014 the tutor answers in the same language.' },
+  { n: '01', title: 'Ask in English or Tamil', body: 'Type your question the way you\u2019d ask a teacher — the tutor answers in the same language.' },
   { n: '02', title: 'Get the syllabus method', body: 'The tutor solves it the A/L way first, and clearly labels anything outside the syllabus.' },
-  { n: '03', title: 'See every step', body: 'Full working, not just the final answer \u2014 expand steps at your own pace.' },
+  { n: '03', title: 'See every step', body: 'Full working, not just the final answer — expand steps at your own pace.' },
   { n: '04', title: 'Practise from past papers', body: 'Jump straight into similar past-paper questions once a topic clicks.' },
 ];
 
@@ -39,12 +39,12 @@ export function Landing() {
               color: 'color-mix(in srgb, var(--color-text) 78%, transparent)',
             }}
           >
-            An AI tutor that stays inside the Sri Lankan syllabus \u2014 nothing extra, nothing missing. Ask in
+            An AI tutor that stays inside the Sri Lankan syllabus — nothing extra, nothing missing. Ask in
             English or Tamil, work through past papers, and see the full working, not just the answer.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', marginTop: 'var(--space-6)' }}>
             <button className="btn btn-primary" style={{ padding: '10px 18px', fontSize: 15 }} onClick={() => navigate('/register')}>
-              Start free \u2014 10 questions a day
+              Start free — 10 questions a day
             </button>
             <button className="btn btn-secondary" style={{ padding: '10px 18px', fontSize: 15 }} onClick={() => navigate('/login')}>
               See a sample answer
@@ -62,7 +62,7 @@ export function Landing() {
           >
             <span>Syllabus-aligned</span>
             <span>English + Tamil</span>
-            <span>Past papers 2019\u20132024</span>
+            <span>Past papers 2019–2024</span>
           </div>
         </div>
 
@@ -119,7 +119,7 @@ export function Landing() {
               }}
             />
             <div style={{ fontSize: 13, color: 'color-mix(in srgb, var(--color-text) 72%, transparent)' }}>
-              Product rule, then differentiate each factor. Full working in three steps \u2192
+              Product rule, then differentiate each factor. Full working in three steps →
             </div>
           </div>
         </div>
@@ -212,7 +212,7 @@ export function Landing() {
         }}
       >
         <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-          <span>iMath \u2014 A/L Combined Maths tutor</span>
+          <span>iMath — A/L Combined Maths tutor</span>
           <span>Not affiliated with the Department of Examinations.</span>
         </div>
       </footer>

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../lib/useAuth';
 
 // Wrap any page that requires login with this. If there's no token,
 // the user gets bounced to /login instead of seeing the page.
