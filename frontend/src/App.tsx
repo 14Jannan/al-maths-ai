@@ -1,16 +1,19 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { Admin } from './pages/Admin';
+import { Dashboard } from './pages/Dashboard';
+import { Tutor } from './pages/Tutor';
+import { Topics } from './pages/Topics';
 import { ComingSoon } from './pages/ComingSoon';
 
 function App() {
   return (
     <Routes>
-      {/* Layout wraps every page with the header nav. Nested <Route>s render
-          inside its <Outlet />. */}
       <Route element={<Layout />}>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -21,7 +24,7 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <ComingSoon title="Dashboard" />
+              <Dashboard />
             </ProtectedRoute>
           }
         />
@@ -29,7 +32,7 @@ function App() {
           path="/tutor"
           element={
             <ProtectedRoute>
-              <ComingSoon title="AI Tutor" />
+              <Tutor />
             </ProtectedRoute>
           }
         />
@@ -37,7 +40,7 @@ function App() {
           path="/topics"
           element={
             <ProtectedRoute>
-              <ComingSoon title="Math Topics" />
+              <Topics />
             </ProtectedRoute>
           }
         />
@@ -63,6 +66,14 @@ function App() {
             <ProtectedRoute>
               <ComingSoon title="Account" />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
           }
         />
       </Route>
