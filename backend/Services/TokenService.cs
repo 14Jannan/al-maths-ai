@@ -15,13 +15,18 @@ public class TokenService
         _configuration = configuration;
     }
 
-    public string CreateToken(IdentityUser user)
+    public string CreateToken(IdentityUser user, IList<string> roles)
     { // claim=>stores small pieces of info,
         var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
-        };
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id),
+        new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
+    };
+
+    foreach (var role in roles)
+    {
+        claims.Add(new Claim(ClaimTypes.Role, role));
+    }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

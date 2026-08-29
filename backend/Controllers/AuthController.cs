@@ -34,7 +34,8 @@ public class AuthController : ControllerBase
             return BadRequest(result.Errors);
         }
 
-        var token = _tokenService.CreateToken(user);
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = _tokenService.CreateToken(user, roles);
         return Ok(new AuthResponseDto { Token = token, Email = user.Email! });
     }
 
@@ -53,7 +54,8 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid email or password");
         }
 
-        var token = _tokenService.CreateToken(user);
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = _tokenService.CreateToken(user, roles);
         return Ok(new AuthResponseDto { Token = token, Email = user.Email! });
     }
 }
