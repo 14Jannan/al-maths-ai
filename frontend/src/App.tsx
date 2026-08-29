@@ -12,6 +12,7 @@ import { Topics } from './pages/Topics';
 import { ComingSoon } from './pages/ComingSoon';
 import { Pricing } from './pages/Pricing';
 import { Account } from './pages/Account';
+import { Papers } from './pages/Papers';
 
 function App() {
   return (
@@ -85,7 +86,15 @@ function App() {
                 <Account />
               </ProtectedRoute>
             }
-          />
+        />
+        <Route
+            path="/papers"
+            element={
+                <ProtectedRoute>
+                    <Papers />
+                </ProtectedRoute>
+            }
+        />
       </Route>
     </Routes>
   );
