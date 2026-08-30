@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 import { apiFetch, ApiError } from '../lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 interface ChatMessage {
   id: string;
@@ -21,6 +22,10 @@ export function Tutor() {
   const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { data: usage, refetch: refetchUsage } = useQuery({
+    queryKey: ['chatUsage'],
+    queryFn: () => apiFetch<{ isPremium: boolean; used: number; limit: number | null }>('/api/Chat/usage'),
+  });
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -31,6 +36,7 @@ export function Tutor() {
 
     const userMessage: ChatMessage = { id: crypto.randomUUID(), role: 'user', text };
     setMessages((prev) => [...prev, userMessage]);
+    refetchUsage();
     setDraft('');
     setError(null);
     setIsThinking(true);
@@ -41,8 +47,12 @@ export function Tutor() {
         body: JSON.stringify({ message: text }),
       });
       setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'ai', text: result.reply }]);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'The tutor is unavailable right now. Try again in a moment.');
+      } catch (err) {
+      if (err instanceof ApiError && err.status === 429) {
+        setError('You\u2019ve used all 10 free questions today. Upgrade to Premium for unlimited questions.');
+      } else {
+        setError(err instanceof ApiError ? err.message : 'The tutor is unavailable right now. Try again in a moment.');
+      }
     } finally {
       setIsThinking(false);
     }
@@ -70,6 +80,10 @@ export function Tutor() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <h4 style={{ margin: 0 }}>AI Tutor</h4>
           {initialTopic && <span className="tag tag-neutral">Context: {initialTopic}</span>}
+          {usage && !usage.isPremium && (
+            <span className="tag tag-outline">{usage.used}/{usage.limit} today</span>
+          )}
+          {usage?.isPremium && <span className="tag tag-accent">Premium — unlimited</span>}
         </div>
         <div style={{ fontSize: 12, color: 'color-mix(in srgb, var(--color-text) 58%, transparent)' }}>
           Ask in English or தமிழ் — the answer follows your question
