@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../lib/use-auth';
 import { startUpgrade, getSubscriptionStatus } from '../lib/payments';
 
 const freeFeatures = [
