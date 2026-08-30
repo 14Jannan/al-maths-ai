@@ -15,4 +15,5 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<PastPaper> PastPapers { get; set; }
     public DbSet<Resource> Resources { get; set; }
     public DbSet<Subscription> Subscriptions { get; set; }
+    public DbSet<ChatUsage> ChatUsages { get; set; }
 }
