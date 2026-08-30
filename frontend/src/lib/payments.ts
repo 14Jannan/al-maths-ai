@@ -6,9 +6,11 @@ declare global {
   interface Window {
     payhere: {
       startPayment: (payload: Record<string, unknown>) => void;
-      onCompleted: (callback: (orderId: string) => void) => void;
-      onDismissed: (callback: () => void) => void;
-      onError: (callback: (message: string) => void) => void;
+      // PayHere's SDK doesn't take these as method calls — it reads these
+      // as plain callback properties you assign directly (see their docs).
+      onCompleted: (orderId: string) => void;
+      onDismissed: () => void;
+      onError: (message: string) => void;
     };
   }
 }
@@ -35,9 +37,9 @@ export async function startUpgrade(userEmail: string, onDone: (success: boolean)
     body: JSON.stringify({ amount: 990 }),
   });
 
-  window.payhere.onCompleted(() => onDone(true));
-  window.payhere.onDismissed(() => onDone(false));
-  window.payhere.onError(() => onDone(false));
+  window.payhere.onCompleted = () => onDone(true);
+  window.payhere.onDismissed = () => onDone(false);
+  window.payhere.onError = () => onDone(false);
 
   window.payhere.startPayment({
     sandbox: true, // flip to false once you move to a live PayHere account
