@@ -44,7 +44,7 @@ export async function startUpgrade(userEmail: string, onDone: (success: boolean)
     merchant_id: checkout.merchantId,
     return_url: undefined,
     cancel_url: undefined,
-    notify_url: 'http://localhost:5000/api/Payments/notify',
+    notify_url: 'https://jersey-atop-semester.ngrok-free.dev/api/Payments/notify',
     order_id: checkout.orderId,
     items: 'iMath Premium — 1 month',
     amount: checkout.amount,
