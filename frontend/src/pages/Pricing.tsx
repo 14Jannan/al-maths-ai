@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../lib/use-auth';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../lib/AuthContext';
+import { startUpgrade, getSubscriptionStatus } from '../lib/payments';
 
 const freeFeatures = [
   '10 tutor questions a day',
@@ -17,7 +20,30 @@ const premiumFeatures = [
 
 export function Pricing() {
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, email } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const { data: subscription } = useQuery({
+    queryKey: ['subscriptionStatus'],
+    queryFn: getSubscriptionStatus,
+    enabled: isLoggedIn,
+  });
+
+  async function handleUpgrade() {
+    if (!isLoggedIn || !email) {
+      navigate('/login');
+      return;
+    }
+    setIsProcessing(true);
+    setMessage(null);
+    await startUpgrade(email, (success) => {
+      setIsProcessing(false);
+      setMessage(success ? 'Payment completed — your plan will update shortly.' : 'Payment was not completed.');
+    });
+  }
+
+  const isPremium = subscription?.isPremium ?? false;
 
   return (
     <main style={{ flex: 1, width: '100%', maxWidth: 1000, margin: '0 auto', padding: 'clamp(32px,6vw,64px) clamp(18px,4vw,40px) 64px' }}>
@@ -29,7 +55,6 @@ export function Pricing() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 'var(--space-6)' }}>
-        {/* Free plan */}
         <div className="card elev-sm" style={{ padding: 'var(--space-6)', gap: 'var(--space-4)' }}>
           <div className="tag tag-neutral" style={{ alignSelf: 'flex-start' }}>Free</div>
           <div>
@@ -44,19 +69,12 @@ export function Pricing() {
               </div>
             ))}
           </div>
-          <button
-            className="btn btn-secondary btn-block"
-            onClick={() => navigate(isLoggedIn ? '/dashboard' : '/register')}
-          >
-            {isLoggedIn ? 'Current plan' : 'Start free'}
+          <button className="btn btn-secondary btn-block" onClick={() => navigate(isLoggedIn ? '/dashboard' : '/register')}>
+            {isPremium ? 'Downgrade' : isLoggedIn ? 'Current plan' : 'Start free'}
           </button>
         </div>
 
-        {/* Premium plan */}
-        <div
-          className="card elev-sm"
-          style={{ padding: 'var(--space-6)', gap: 'var(--space-4)', border: '1px solid var(--color-accent)' }}
-        >
+        <div className="card elev-sm" style={{ padding: 'var(--space-6)', gap: 'var(--space-4)', border: '1px solid var(--color-accent)' }}>
           <div className="tag tag-accent" style={{ alignSelf: 'flex-start' }}>Premium</div>
           <div>
             <span style={{ fontSize: 34, fontFamily: 'var(--font-heading)' }}>Rs. 990</span>
@@ -70,12 +88,10 @@ export function Pricing() {
               </div>
             ))}
           </div>
-          {/* Payment integration (PayHere) isn't wired up yet — this is a
-              placeholder button so the page is complete and ready for that
-              next step. */}
-          <button className="btn btn-primary btn-block" disabled title="Payment integration coming soon">
-            Upgrade — coming soon
+          <button className="btn btn-primary btn-block" onClick={handleUpgrade} disabled={isProcessing || isPremium}>
+            {isPremium ? 'Active' : isProcessing ? 'Opening checkout…' : 'Upgrade now'}
           </button>
+          {message && <div style={{ fontSize: 13, color: 'color-mix(in srgb, var(--color-text) 65%, transparent)' }}>{message}</div>}
         </div>
       </div>
     </main>
