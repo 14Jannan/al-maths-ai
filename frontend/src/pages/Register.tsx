@@ -32,7 +32,9 @@ export function Register() {
     }
   }
 
-  const passwordLooksStrong = password.length >= 8;
+  // Matches the backend's actual Identity password policy (Program.cs):
+  // at least 6 characters, one digit, one uppercase letter.
+  const passwordLooksStrong = password.length >= 6 && /\d/.test(password) && /[A-Z]/.test(password);
 
   return (
     <main style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 'clamp(24px,6vw,64px) clamp(18px,4vw,40px)' }}>
@@ -76,7 +78,7 @@ export function Register() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
+              placeholder="At least 6 characters, with a number and a capital letter"
               required
             />
             {passwordLooksStrong && (

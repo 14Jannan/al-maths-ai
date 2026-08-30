@@ -31,7 +31,12 @@ public class AuthController : ControllerBase
 
         if (!result.Succeeded)
         {
-            return BadRequest(result.Errors);
+            // The frontend's apiFetch only knows how to surface a { error }
+            // shaped body — the raw IdentityError[] Identity returns by
+            // default gets silently swallowed into a generic "Request
+            // failed" message, so join it into one string here instead.
+            var message = string.Join(" ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { error = message });
         }
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -45,13 +50,13 @@ public class AuthController : ControllerBase
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user == null)
         {
-            return Unauthorized("Invalid email or password");
+            return Unauthorized(new { error = "Invalid email or password" });
         }
 
         var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
         if (!result.Succeeded)
         {
-            return Unauthorized("Invalid email or password");
+            return Unauthorized(new { error = "Invalid email or password" });
         }
 
         var roles = await _userManager.GetRolesAsync(user);
