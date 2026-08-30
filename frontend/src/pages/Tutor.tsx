@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 import { apiFetch, ApiError } from '../lib/api';
 import { useQuery } from '@tanstack/react-query';
+import { RenderedMessage } from '../components/RenderedMessage';
 
 interface ChatMessage {
   id: string;
@@ -130,7 +131,7 @@ export function Tutor() {
                 <span style={{ width: 5, height: 5, background: 'var(--color-accent)', transform: 'rotate(45deg)' }} />
                 iMath tutor
               </div>
-              <div style={{ fontSize: 15, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{m.text}</div>
+              <div style={{ fontSize: 15, lineHeight: 1.75 }}><RenderedMessage text={m.text} /></div>
             </div>
           )
         )}
