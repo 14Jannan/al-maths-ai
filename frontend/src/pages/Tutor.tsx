@@ -91,6 +91,56 @@ export function Tutor() {
     }
   }
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  async function sendImage(file: File) {
+    if (isThinking || isUploadingImage) return;
+
+    setIsUploadingImage(true);
+    setError(null);
+
+    // Show the photo immediately as the user's message, before the server responds
+    const previewUrl = URL.createObjectURL(file);
+    const placeholderId = crypto.randomUUID();
+    setMessages((prev) => [...prev, { id: placeholderId, role: 'user', text: `![question image](${previewUrl})` }]);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('message', draft);
+      if (conversationId) formData.append('conversationId', String(conversationId));
+
+      const result = await apiFetch<{ reply: string; imageUrl: string; conversationId: number }>('/api/Chat/image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      setDraft('');
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'ai', text: result.reply }]);
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['chatUsage'] });
+
+      if (conversationId == null) {
+        navigate(`/tutor/${result.conversationId}`, { replace: true });
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 429) {
+        setError('You\u2019ve used all 10 free questions today. Upgrade to Premium for unlimited questions.');
+      } else {
+        setError(err instanceof ApiError ? err.message : 'Could not process the image. Try again.');
+      }
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) sendImage(file);
+    e.target.value = ''; // allow selecting the same file again later
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     sendMessage(draft);
@@ -195,6 +245,14 @@ export function Tutor() {
             </div>
           )}
 
+          {isUploadingImage && (
+            <div style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-sm)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+              <span style={{ fontSize: 13.5, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>
+                Reading the question from your photo…
+              </span>
+            </div>
+          )}
+
           {error && (
             <div style={{ fontSize: 13, color: 'var(--color-neutral-300)', border: '1px solid var(--color-divider)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)' }}>
               {error}
@@ -205,8 +263,25 @@ export function Tutor() {
         </div>
 
         <div style={{ position: 'sticky', bottom: 0, background: 'linear-gradient(to top, var(--color-bg) 70%, transparent)', paddingBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          <form style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }} onSubmit={handleSubmit}>
-            <textarea
+                  <form style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }} onSubmit={handleSubmit}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style={{ display: 'none' }}
+            onChange={handleFileSelected}
+          />
+          <button
+            type="button"
+            className="btn btn-secondary btn-icon"
+            style={{ height: 46, width: 46, flexShrink: 0 }}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isThinking || isUploadingImage}
+            title="Upload a photo of a question"
+          >
+            📷
+          </button>
+          <textarea
               className="input"
               placeholder="Ask a question about differentiation, integration, vectors…"
               value={draft}
@@ -219,7 +294,7 @@ export function Tutor() {
               }}
               style={{ minHeight: 46, maxHeight: 120, resize: 'none', padding: 12, fontSize: 14.5 }}
             />
-            <button className="btn btn-primary" type="submit" disabled={isThinking || !draft.trim()} style={{ height: 46, paddingInline: 18 }}>
+            <button className="btn btn-primary" type="submit" disabled={isThinking || isUploadingImage || !draft.trim()} style={{ height: 46, paddingInline: 18 }}>
               Send
             </button>
           </form>
