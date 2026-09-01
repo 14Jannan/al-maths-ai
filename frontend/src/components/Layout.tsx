@@ -1,108 +1,124 @@
-import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useState } from 'react';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/use-auth';
+import { Sidebar } from './Sidebar';
 
 export function Layout() {
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isCurrent = (path: string) => (location.pathname === path ? 'page' : undefined);
+  const shellStyle: React.CSSProperties = {
+    minHeight: '100vh',
+    background: 'var(--color-bg)',
+    color: 'var(--color-text)',
+    fontFamily: 'var(--font-body)',
+  };
 
-  function handleLogout() {
-    logout();
-    navigate('/login');
+  // Logged-out visitors see a simple top nav (marketing pages) — no app sidebar.
+  if (!isLoggedIn) {
+    return (
+      <div style={{ ...shellStyle, display: 'flex', flexDirection: 'column' }}>
+        <header
+          className="nav"
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 20,
+            gap: 'var(--space-6)',
+            padding: '10px clamp(14px,4vw,40px)',
+            background: 'color-mix(in srgb, var(--color-bg) 88%, transparent)',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 1px 0 var(--color-divider)',
+          }}
+        >
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 9, marginRight: 'auto', textDecoration: 'none' }}>
+            <span
+              style={{
+                width: 22,
+                height: 22,
+                border: '1px solid var(--color-accent)',
+                borderRadius: 6,
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: 12,
+                color: 'var(--color-accent)',
+                fontWeight: 600,
+              }}
+            >
+              i
+            </span>
+            <span>iMath</span>
+          </Link>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px,2vw,20px)', fontSize: 14 }}>
+            <Link to="/pricing">Pricing</Link>
+          </nav>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <button className="btn btn-secondary" onClick={() => navigate('/login')}>Log in</button>
+            <button className="btn btn-primary" onClick={() => navigate('/register')}>Start free</button>
+          </div>
+        </header>
+        <Outlet />
+      </div>
+    );
   }
 
+  // Logged-in app shell: sidebar + content.
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--color-bg)',
-        color: 'var(--color-text)',
-        fontFamily: 'var(--font-body)',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <header
-        className="nav"
+    <div style={{ ...shellStyle, display: 'flex' }}>
+      {/* Desktop sidebar */}
+      <div className="hidden md:flex" style={{ width: 230, flexShrink: 0, borderRight: '1px solid var(--color-divider)', position: 'sticky', top: 0, height: '100vh' }}>
+        <Sidebar />
+      </div>
+
+      {/* Mobile top bar + slide-over sidebar */}
+      <div className="md:hidden" style={{ display: 'none' }} />
+      <div
+        className="md:hidden"
         style={{
-          position: 'sticky',
+          position: 'fixed',
           top: 0,
-          zIndex: 20,
-          gap: 'var(--space-6)',
-          padding: '10px clamp(14px,4vw,40px)',
-          background: 'color-mix(in srgb, var(--color-bg) 88%, transparent)',
+          left: 0,
+          right: 0,
+          zIndex: 30,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 14px',
+          background: 'color-mix(in srgb, var(--color-bg) 92%, transparent)',
           backdropFilter: 'blur(10px)',
           boxShadow: '0 1px 0 var(--color-divider)',
-          flexWrap: 'wrap',
         }}
       >
-        <Link
-          className="nav-brand"
-          to="/"
-          style={{ display: 'flex', alignItems: 'center', gap: 9, marginRight: 'auto', textDecoration: 'none' }}
-        >
-          <span
-            style={{
-              width: 22,
-              height: 22,
-              border: '1px solid var(--color-accent)',
-              borderRadius: 6,
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 12,
-              color: 'var(--color-accent)',
-              fontWeight: 600,
-            }}
-          >
-            i
-          </span>
-          <span>iMath</span>
+        <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+          <span style={{ width: 20, height: 20, border: '1px solid var(--color-accent)', borderRadius: 6, display: 'grid', placeItems: 'center', fontSize: 11, color: 'var(--color-accent)' }}>i</span>
+          <span style={{ fontSize: 14 }}>iMath</span>
         </Link>
+        <button className="btn btn-ghost btn-icon" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+          ☰
+        </button>
+      </div>
 
-        {isLoggedIn ? (
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px,2vw,20px)', flexWrap: 'wrap', fontSize: 14 }}>
-            <Link to="/dashboard" aria-current={isCurrent('/dashboard')}>Dashboard</Link>
-            <Link to="/tutor" aria-current={isCurrent('/tutor')}>AI Tutor</Link>
-            <Link to="/topics" aria-current={isCurrent('/topics')}>Topics</Link>
-            <Link to="/papers" aria-current={isCurrent('/papers')}>Past Papers</Link>
-            <Link to="/resources" aria-current={isCurrent('/resources')}>Resources</Link>
-          </nav>
-        ) : (
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px,2vw,20px)', flexWrap: 'wrap', fontSize: 14 }}>
-            <Link to="/pricing" aria-current={isCurrent('/pricing')}>Pricing</Link>
-          </nav>
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          {isLoggedIn ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <Link to="/pricing" style={{ fontSize: 13 }} aria-current={isCurrent('/pricing')}>Pricing</Link>
-              <button
-                className="btn btn-icon btn-secondary"
-                title="Account"
-                onClick={() => navigate('/account')}
-                style={{ borderRadius: '50%', fontSize: 12, letterSpacing: '0.02em' }}
-              >
-                {/* Simple initials avatar placeholder */}
-                AC
-              </button>
-              <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={handleLogout}>
-                Log out
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <button className="btn btn-secondary" onClick={() => navigate('/login')}>Log in</button>
-              <button className="btn btn-primary" onClick={() => navigate('/register')}>Start free</button>
-            </div>
-          )}
+      {mobileOpen && (
+        <div
+          className="md:hidden"
+          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setMobileOpen(false)}
+        >
+          <div
+            style={{ width: 250, height: '100%', background: 'var(--color-bg)', borderRight: '1px solid var(--color-divider)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Sidebar onNavigate={() => setMobileOpen(false)} />
+          </div>
         </div>
-      </header>
+      )}
 
-      {/* Outlet renders whichever page's route matched — this is how nested routing works */}
-      <Outlet />
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        {/* Spacer so content isn't hidden behind the fixed mobile top bar */}
+        <div className="md:hidden" style={{ height: 52 }} />
+        <Outlet />
+      </div>
     </div>
   );
 }
