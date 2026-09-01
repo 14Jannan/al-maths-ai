@@ -33,7 +33,7 @@ function App() {
           }
         />
         <Route
-          path="/tutor"
+          path="/tutor/:conversationId?"
           element={
             <ProtectedRoute>
               <Tutor />
