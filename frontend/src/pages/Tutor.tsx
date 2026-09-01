@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, ApiError } from '../lib/api';
 import { getConversation } from '../lib/conversations';
-import { ChatSidebar } from '../components/ChatSidebar';
 import { RenderedMessage } from '../components/RenderedMessage';
 
 interface ChatMessage {
@@ -99,8 +98,6 @@ export function Tutor() {
 
   return (
     <div style={{ flex: 1, display: 'flex', minHeight: 0, width: '100%' }}>
-      <ChatSidebar activeId={conversationId} onSelect={(id) => navigate(id ? `/tutor/${id}` : '/tutor')} />
-
       <main
         style={{
           flex: 1,
