@@ -17,11 +17,13 @@ public class ChatController : ControllerBase
 
     private readonly IAiProvider _aiProvider;
     private readonly AppDbContext _context;
+    private readonly SupabaseStorageService _storageService;
 
-    public ChatController(IAiProvider aiProvider, AppDbContext context)
+    public ChatController(IAiProvider aiProvider, AppDbContext context, SupabaseStorageService storageService)
     {
         _aiProvider = aiProvider;
         _context = context;
+        _storageService = storageService;
     }
 
     private string CurrentUserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
@@ -109,6 +111,97 @@ public class ChatController : ControllerBase
         catch (Exception ex)
         {
             await _context.SaveChangesAsync(); // still save the user's message even if the AI call failed
+            return StatusCode(502, new { error = "AI service is currently unavailable", details = ex.Message });
+        }
+    }
+    
+        [HttpPost("image")]
+    [RequestSizeLimit(10_000_000)] // 10 MB max per photo
+    public async Task<IActionResult> SendImageMessage([FromForm] IFormFile image, [FromForm] string? message, [FromForm] int? conversationId)
+    {
+        if (image == null || image.Length == 0)
+        {
+            return BadRequest("No image uploaded");
+        }
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+        if (!allowedTypes.Contains(image.ContentType))
+        {
+            return BadRequest("Only JPEG, PNG, or WebP images are allowed");
+        }
+
+        var userId = CurrentUserId;
+
+        var subscription = await _context.Subscriptions.FirstOrDefaultAsync(s => s.UserId == userId);
+        var isPremium = subscription is { Status: "Active", ExpiresAt: not null } && subscription.ExpiresAt > DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        if (!isPremium)
+        {
+            var existingUsage = await _context.ChatUsages.FirstOrDefaultAsync(u => u.UserId == userId && u.Date == today);
+            if ((existingUsage?.Count ?? 0) >= FreeDailyLimit)
+            {
+                return StatusCode(429, new { error = "Daily free limit reached", limit = FreeDailyLimit });
+            }
+        }
+
+        ChatConversation? conversation = null;
+        if (conversationId.HasValue)
+        {
+            conversation = await _context.ChatConversations.FirstOrDefaultAsync(c => c.Id == conversationId.Value && c.UserId == userId);
+        }
+        if (conversation == null)
+        {
+            conversation = new ChatConversation { UserId = userId, Title = "Photo question" };
+            _context.ChatConversations.Add(conversation);
+            await _context.SaveChangesAsync();
+        }
+
+        string imageUrl;
+        try
+        {
+            var extension = Path.GetExtension(image.FileName);
+            if (string.IsNullOrWhiteSpace(extension)) extension = ".jpg";
+            await using var stream = image.OpenReadStream();
+            imageUrl = await _storageService.UploadQuestionImageAsync(userId, stream, image.ContentType, extension);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(502, new { error = "Image upload failed", details = ex.Message });
+        }
+
+        // Store the image as a markdown-style image reference so the frontend can render it in the chat bubble
+        var userContent = string.IsNullOrWhiteSpace(message)
+            ? $"![question image]({imageUrl})"
+            : $"![question image]({imageUrl})\n{message}";
+
+        _context.ChatMessages.Add(new ChatMessage { ChatConversationId = conversation.Id, Role = "user", Content = userContent });
+
+        try
+        {
+            var reply = await _aiProvider.GetVisionCompletionAsync(imageUrl, message ?? string.Empty);
+
+            _context.ChatMessages.Add(new ChatMessage { ChatConversationId = conversation.Id, Role = "ai", Content = reply });
+            conversation.UpdatedAt = DateTime.UtcNow;
+
+            if (!isPremium)
+            {
+                var usage = await _context.ChatUsages.FirstOrDefaultAsync(u => u.UserId == userId && u.Date == today);
+                if (usage == null)
+                {
+                    usage = new ChatUsage { UserId = userId, Date = today, Count = 0 };
+                    _context.ChatUsages.Add(usage);
+                }
+                usage.Count += 1;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new ImageChatResponseDto { Reply = reply, ImageUrl = imageUrl, ConversationId = conversation.Id });
+        }
+        catch (Exception ex)
+        {
+            await _context.SaveChangesAsync();
             return StatusCode(502, new { error = "AI service is currently unavailable", details = ex.Message });
         }
     }
