@@ -56,6 +56,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddScoped<backend.Services.TokenService>();
 builder.Services.AddHttpClient<backend.Services.IAiProvider, backend.Services.GroqAiProvider>();
+builder.Services.AddHttpClient<backend.Services.SupabaseStorageService>();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
