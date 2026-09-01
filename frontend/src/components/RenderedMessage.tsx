@@ -1,11 +1,10 @@
 import { Math } from './Math';
 
-// Splits AI reply text on LaTeX delimiters — \[ ... \] (display math),
-// \( ... \) (inline math) — and renders each piece with KaTeX or as plain
-// text. This keeps the AI's chat-style answer readable instead of showing
-// raw LaTeX source.
+// Splits AI reply text on LaTeX delimiters (\[ \], \( \)) and markdown-style
+// image syntax (![alt](url)) — used to render both formulas and uploaded
+// question photos inline in the chat.
 export function RenderedMessage({ text }: { text: string }) {
-  const parts = text.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  const parts = text.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|!\[[^\]]*\]\([^)]+\))/g);
 
   return (
     <>
@@ -17,6 +16,18 @@ export function RenderedMessage({ text }: { text: string }) {
         if (part.startsWith('\\(') && part.endsWith('\\)')) {
           const tex = part.slice(2, -2).trim();
           return <Math key={i} tex={tex} style={{ display: 'inline-block' }} />;
+        }
+        const imageMatch = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        if (imageMatch) {
+          const [, alt, url] = imageMatch;
+          return (
+            <img
+              key={i}
+              src={url}
+              alt={alt || 'question'}
+              style={{ maxWidth: '100%', maxHeight: 280, borderRadius: 'var(--radius-md)', display: 'block', margin: '6px 0' }}
+            />
+          );
         }
         return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part}</span>;
       })}
