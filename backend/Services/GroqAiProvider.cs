@@ -68,6 +68,49 @@ FORMAT RULE (keep it chat-like, not a textbook document):
             .GetProperty("content")
             .GetString();
 
+                return reply ?? string.Empty;
+    }
+
+    public async Task<string> GetVisionCompletionAsync(string imageUrl, string userMessage)
+    {
+        var apiKey = _configuration["Groq:ApiKey"];
+        var visionModel = "qwen/qwen3.8-27b";
+
+        var requestBody = new
+        {
+            model = visionModel,
+            messages = new object[]
+            {
+                new { role = "system", content = "You are the iMath AI tutor for Sri Lankan A/L Combined Mathematics students. A student has uploaded a photo of a question. Read the question from the image carefully, then solve it using the standard A/L method, showing full working. If the image is unclear or not a maths question, say so clearly instead of guessing." },
+                new
+                {
+                    role = "user",
+                    content = new object[]
+                    {
+                        new { type = "text", text = string.IsNullOrWhiteSpace(userMessage) ? "Please solve this question." : userMessage },
+                        new { type = "image_url", image_url = new { url = imageUrl } }
+                    }
+                }
+            }
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
+        request.Headers.Add("Authorization", $"Bearer {apiKey}");
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(requestBody),
+            Encoding.UTF8,
+            "application/json");
+
+        var response = await _httpClient.SendAsync(request);
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception($"Groq vision API error ({response.StatusCode}): {responseBody}");
+        }
+
+        using var doc = JsonDocument.Parse(responseBody);
+        var reply = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
         return reply ?? string.Empty;
     }
-}
+}   
