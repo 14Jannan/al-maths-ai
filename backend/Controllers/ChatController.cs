@@ -74,6 +74,15 @@ public class ChatController : ControllerBase
             await _context.SaveChangesAsync(); // need the Id before attaching messages
         }
 
+        // Load the recent history BEFORE adding the new AI reply, so the
+        // model sees everything that happened up to (and including) this
+        // user message, but not this call's own not-yet-generated reply.
+        var recentHistory = await _context.ChatMessages
+            .Where(m => m.ChatConversationId == conversation.Id)
+            .OrderBy(m => m.CreatedAt)
+            .Select(m => new ChatTurn(m.Role, m.Content))
+            .ToListAsync();
+
         _context.ChatMessages.Add(new ChatMessage
         {
             ChatConversationId = conversation.Id,
@@ -83,7 +92,7 @@ public class ChatController : ControllerBase
 
         try
         {
-            var reply = await _aiProvider.GetCompletionAsync(dto.Message);
+            var reply = await _aiProvider.GetCompletionAsync(recentHistory, dto.Message);
 
             _context.ChatMessages.Add(new ChatMessage
             {
