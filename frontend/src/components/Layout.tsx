@@ -71,16 +71,19 @@ export function Layout() {
         <Sidebar />
       </div>
 
-      {/* Mobile top bar + slide-over sidebar */}
+      {/* Mobile top bar + slide-over sidebar.
+          No `display` here — the md:hidden class owns that responsively.
+          An inline display would always beat it (inline styles trump
+          stylesheet rules regardless of media query), keeping this fixed
+          bar visible — and overlapping the page — on desktop too. */}
       <div
-        className="md:hidden"
+        className="flex md:hidden"
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           zIndex: 30,
-          display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '10px 14px',
