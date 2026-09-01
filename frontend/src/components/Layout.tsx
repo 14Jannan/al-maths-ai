@@ -72,7 +72,6 @@ export function Layout() {
       </div>
 
       {/* Mobile top bar + slide-over sidebar */}
-      <div className="md:hidden" style={{ display: 'none' }} />
       <div
         className="md:hidden"
         style={{
