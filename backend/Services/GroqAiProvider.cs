@@ -14,7 +14,7 @@ public class GroqAiProvider : IAiProvider
         _configuration = configuration;
     }
 
-    public async Task<string> GetCompletionAsync(string userMessage)
+    public async Task<string> GetCompletionAsync(List<ChatTurn> history, string userMessage)
     {
         var apiKey = _configuration["Groq:ApiKey"];
         var model = _configuration["Groq:Model"];
@@ -34,17 +34,23 @@ FORMAT RULE (keep it chat-like, not a textbook document):
 - Do NOT use markdown tables, multiple heading levels, or long reference-style sections (no 'Common Mistakes' tables, no numbered theory dumps) unless the student explicitly asks for a full explanation of a concept.
 - For a 'solve this' style question: 1-2 sentences identifying the method, then the worked steps, then the final boxed-style answer. Keep it under ~150 words unless the student asks for more detail.
 - Write every formula using LaTeX delimited by \( ... \) for inline math or \[ ... \] for standalone display math — never plain-text approximations like 'x^2' outside of these delimiters.
-- Sound like a tutor talking to one student, not a textbook chapter.";
+- Sound like a tutor talking to one student, not a textbook chapter.
 
-        var requestBody = new
+CONTEXT RULE:
+Earlier messages in this conversation are provided for context. Refer back to them naturally if the student asks a follow-up (e.g. 'what about part b', 'explain that step again') instead of treating each message as unrelated.";
+
+        var messages = new List<object> { new { role = "system", content = systemPrompt } };
+
+        // Include recent conversation history so the AI has memory of this chat.
+        // Capped to the last 10 turns to keep token usage and cost reasonable —
+        // very long conversations don't need the full history for context to work.
+        foreach (var turn in history.TakeLast(10))
         {
-            model = model,
-            messages = new[]
-            {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = userMessage }
-            }
-        };
+            messages.Add(new { role = turn.Role == "ai" ? "assistant" : "user", content = turn.Content });
+        }
+        messages.Add(new { role = "user", content = userMessage });
+
+        var requestBody = new { model = model, messages = messages };
 
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
         request.Headers.Add("Authorization", $"Bearer {apiKey}");
