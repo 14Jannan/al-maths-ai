@@ -74,12 +74,14 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp =
 
 // Seed the Admin role if it doesn't already exist.
 // This runs once at startup, every time the app starts — cheap and idempotent.
+// Seed syllabus reference data if the table is empty
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    if (!await roleManager.RoleExistsAsync("Admin"))
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if (!db.SyllabusEntries.Any())
     {
-        await roleManager.CreateAsync(new IdentityRole("Admin"));
+        db.SyllabusEntries.AddRange(backend.Data.SyllabusSeedData.GetEntries());
+        await db.SaveChangesAsync();
     }
 }
 
