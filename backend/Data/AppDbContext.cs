@@ -18,4 +18,5 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ChatUsage> ChatUsages { get; set; }
     public DbSet<ChatConversation> ChatConversations { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
+    public DbSet<SyllabusEntry> SyllabusEntries { get; set; }
 }
