@@ -26,6 +26,7 @@ export function Layout() {
             top: 0,
             zIndex: 20,
             gap: 'var(--space-6)',
+            flexWrap: 'wrap',
             padding: '10px clamp(14px,4vw,40px)',
             background: 'color-mix(in srgb, var(--color-bg) 88%, transparent)',
             backdropFilter: 'blur(10px)',
@@ -53,7 +54,7 @@ export function Layout() {
           <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px,2vw,20px)', fontSize: 14 }}>
             <Link to="/pricing">Pricing</Link>
           </nav>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
             <button className="btn btn-secondary" onClick={() => navigate('/login')}>Log in</button>
             <button className="btn btn-primary" onClick={() => navigate('/register')}>Start free</button>
           </div>
