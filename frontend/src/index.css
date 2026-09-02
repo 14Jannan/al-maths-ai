@@ -6,3 +6,21 @@
   0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
   30% { opacity: 1; transform: translateY(-2px); }
 }
+
+/* Layout.tsx uses these two classes to make the desktop sidebar and the
+   mobile top bar/drawer mutually exclusive by width — but nothing here
+   ever defined them, so both rendered unconditionally at every width:
+   the fixed mobile bar sat on top of the desktop sidebar's own header,
+   and the sidebar kept eating 230px of width it shouldn't have on
+   narrow viewports, squeezing page content until it overflowed. */
+.app-sidebar-desktop { display: flex; }
+.app-topbar-mobile { display: none; }
+
+@media (max-width: 767px) {
+  .app-sidebar-desktop { display: none; }
+  .app-topbar-mobile { display: flex; }
+}
+
+html, body {
+  overflow-x: hidden;
+}
