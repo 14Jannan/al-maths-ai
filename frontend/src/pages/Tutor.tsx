@@ -205,6 +205,8 @@ export function Tutor() {
               <div
                 key={m.id}
                 style={{
+                  maxWidth: '100%',
+                  overflowX: 'hidden',
                   background: 'var(--color-surface)',
                   boxShadow: 'var(--shadow-sm)',
                   borderRadius: 'var(--radius-lg)',
