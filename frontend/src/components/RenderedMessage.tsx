@@ -1,17 +1,21 @@
 import { Math } from './Math';
 
-// Splits AI reply text on LaTeX delimiters (\[ \], \( \)) and markdown-style
-// image syntax (![alt](url)) — used to render both formulas and uploaded
-// question photos inline in the chat.
+// Splits AI reply text on LaTeX delimiters (\[ \], \( \)), markdown-style
+// image syntax (![alt](url)), and **bold** markdown — used to render
+// formulas, uploaded photos, and basic emphasis inline in the chat.
 export function RenderedMessage({ text }: { text: string }) {
-  const parts = text.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|!\[[^\]]*\]\([^)]+\))/g);
+  const parts = text.split(/(\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|!\[[^\]]*\]\([^)]+\)|\*\*[^*]+\*\*)/g);
 
   return (
     <>
       {parts.map((part, i) => {
         if (part.startsWith('\\[') && part.endsWith('\\]')) {
           const tex = part.slice(2, -2).trim();
-          return <Math key={i} tex={tex} display style={{ margin: '8px 0' }} />;
+          return (
+            <div key={i} style={{ overflowX: 'auto', maxWidth: '100%' }}>
+              <Math tex={tex} display style={{ margin: '8px 0' }} />
+            </div>
+          );
         }
         if (part.startsWith('\\(') && part.endsWith('\\)')) {
           const tex = part.slice(2, -2).trim();
@@ -29,7 +33,14 @@ export function RenderedMessage({ text }: { text: string }) {
             />
           );
         }
-        return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part}</span>;
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i}>{part.slice(2, -2)}</strong>;
+        }
+        return (
+          <span key={i} style={{ whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+            {part}
+          </span>
+        );
       })}
     </>
   );
