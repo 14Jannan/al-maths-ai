@@ -41,7 +41,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const navigate = useNavigate();
   const params = useParams<{ conversationId?: string }>();
   const queryClient = useQueryClient();
-  const { email, isAdmin } = useAuth();
+  const { email, isAdmin, logout } = useAuth();
 
   const onTutorRoute = location.pathname.startsWith('/tutor');
   const activeConversationId = params.conversationId ? Number(params.conversationId) : null;
@@ -85,6 +85,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   function isActive(path: string) {
     return location.pathname === path;
+  }
+
+  function handleLogout() {
+    logout();
+    navigate('/login');
   }
 
   return (
@@ -294,40 +299,55 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </nav>
 
-      {/* Compact account footer — plan status + upgrade only; full account details live on /account */}
-      <button
-        onClick={() => {
-          navigate('/account');
-          onNavigate?.();
-        }}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          background: 'none',
-          border: 'none',
-          borderTop: '1px solid var(--color-divider)',
-          padding: '10px 6px 0',
-          marginTop: 'var(--space-3)',
-          cursor: 'pointer',
-          color: 'inherit',
-          textAlign: 'left',
-        }}
-      >
-        <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--color-surface)', display: 'grid', placeItems: 'center', fontSize: 10.5, fontWeight: 600, flexShrink: 0 }}>
-          {initials}
-        </span>
-        <span style={{ flex: 1, minWidth: 0, fontSize: 12.5 }}>
-          {isPremium ? (
-            <span style={{ color: 'var(--color-accent)' }}>Premium</span>
-          ) : (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>Free plan</span>
-              <span style={{ color: 'var(--color-accent)', fontWeight: 500 }}>Upgrade</span>
-            </span>
-          )}
-        </span>
-      </button>
+      {/* Compact account footer — plan status links straight to pricing,
+          profile row links to account, logout is its own explicit action */}
+      <div style={{ borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-3)', marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        {!isPremium && (
+          <button
+            className="btn btn-primary"
+            style={{ fontSize: 12.5, padding: '6px 10px' }}
+            onClick={() => {
+              navigate('/pricing');
+              onNavigate?.();
+            }}
+          >
+            Upgrade to Premium
+          </button>
+        )}
+
+        <button
+          onClick={() => {
+            navigate('/account');
+            onNavigate?.();
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'none',
+            border: 'none',
+            padding: '6px',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            color: 'inherit',
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--color-surface)', display: 'grid', placeItems: 'center', fontSize: 10.5, fontWeight: 600, flexShrink: 0 }}>
+            {initials}
+          </span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 12.5 }}>
+            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
+            <div style={{ color: isPremium ? 'var(--color-accent)' : 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>
+              {isPremium ? 'Premium' : 'Free plan'}
+            </div>
+          </span>
+        </button>
+
+        <button className="btn btn-ghost" style={{ fontSize: 12, color: 'var(--color-neutral-300)' }} onClick={handleLogout}>
+          Log out
+        </button>
+      </div>
     </div>
   );
 }
