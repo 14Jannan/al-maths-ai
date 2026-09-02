@@ -61,6 +61,7 @@ builder.Services.AddScoped<backend.Services.SyllabusRetrievalService>();
 builder.Services.AddHttpClient<backend.Services.IAiProvider, backend.Services.GroqAiProvider>();
 builder.Services.AddHttpClient<backend.Services.SupabaseStorageService>();
 builder.Services.AddHttpClient<backend.Services.CohereEmbeddingService>();
+builder.Services.AddScoped<backend.Services.DocumentProcessingService>();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

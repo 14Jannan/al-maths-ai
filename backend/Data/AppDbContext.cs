@@ -25,6 +25,9 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.HasPostgresExtension("vector");
+        modelBuilder.Entity<SyllabusEntry>()
+            .Property(e => e.Embedding)
+            .HasColumnType("vector(1024)");
         modelBuilder.Entity<DocumentChunk>()
             .Property(e => e.Embedding)
             .HasColumnType("vector(1024)");
