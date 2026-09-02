@@ -169,6 +169,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 3,
+                        minWidth: 0,
                         borderRadius: 'var(--radius-sm)',
                         background: activeConversationId === c.id ? 'var(--color-surface)' : 'transparent',
                         padding: '4px 6px',
@@ -202,6 +203,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                           title={c.title}
                           style={{
                             flex: 1,
+                            minWidth: 0,
                             textAlign: 'left',
                             background: 'none',
                             border: 'none',
