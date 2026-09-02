@@ -50,7 +50,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
 
-  // Keep the section expanded automatically whenever you're actually on a tutor page
   useEffect(() => {
     if (onTutorRoute) setTutorOpen(true);
   }, [onTutorRoute]);
@@ -93,7 +92,22 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 'var(--space-4) var(--space-3)' }}>
+    // width/minWidth/overflow here are the key fix: without an explicit
+    // min-width:0, a flex child defaults to "never shrink smaller than my
+    // content" — so one long chat title could silently push this whole
+    // column (and the fixed-width wrapper around it) wider than intended.
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
+        padding: 'var(--space-4) var(--space-3)',
+        boxSizing: 'border-box',
+      }}
+    >
       <Link
         to="/dashboard"
         onClick={onNavigate}
@@ -105,11 +119,20 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <span style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>iMath</span>
       </Link>
 
-      {/* paddingRight keeps every item's active/hover background pill a few
-          px clear of the sidebar's right border — without it, the pill's
-          box (which stretches to fill the nav's width) can sit flush
-          against that divider and read as the highlight bleeding past it. */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
+      <nav
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          width: '100%',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          paddingRight: 4,
+        }}
+      >
         <Link
           to="/dashboard"
           onClick={onNavigate}
@@ -153,7 +176,20 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </button>
 
         {tutorOpen && (
-          <div style={{ paddingLeft: 8, borderLeft: '1px solid var(--color-divider)', marginLeft: 12, display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4, paddingBottom: 6 }}>
+          <div
+            style={{
+              paddingLeft: 8,
+              borderLeft: '1px solid var(--color-divider)',
+              marginLeft: 12,
+              width: 'calc(100% - 20px)',
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              paddingTop: 4,
+              paddingBottom: 6,
+            }}
+          >
             <button
               onClick={() => {
                 navigate('/tutor');
@@ -166,11 +202,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             </button>
 
             {groups.map((g) => (
-              <div key={g.label}>
+              <div key={g.label} style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--color-text) 45%, transparent)', padding: '0 8px 3px' }}>
                   {g.label}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
                   {g.items.map((c) => (
                     <div
                       key={c.id}
@@ -187,7 +223,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                       {editingId === c.id ? (
                         <input
                           className="input"
-                          style={{ fontSize: 11.5, padding: '2px 5px', flex: 1 }}
+                          style={{ fontSize: 11.5, padding: '2px 5px', flex: 1, minWidth: 0 }}
                           value={editTitle}
                           autoFocus
                           onChange={(e) => setEditTitle(e.target.value)}
@@ -234,7 +270,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                           setEditTitle(c.title);
                         }}
                         className="btn btn-ghost btn-icon"
-                        style={{ fontSize: 10, padding: 2 }}
+                        style={{ fontSize: 10, padding: 2, flexShrink: 0 }}
                         title="Rename"
                       >
                         ✎
@@ -242,7 +278,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                       <button
                         onClick={() => remove.mutate(c.id)}
                         className="btn btn-ghost btn-icon"
-                        style={{ fontSize: 10, padding: 2, color: 'var(--color-neutral-300)' }}
+                        style={{ fontSize: 10, padding: 2, color: 'var(--color-neutral-300)', flexShrink: 0 }}
                         title="Delete"
                       >
                         ✕
@@ -301,7 +337,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Compact account footer — plan status links straight to pricing,
           profile row links to account, logout is its own explicit action */}
-      <div style={{ borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-3)', marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+      <div style={{ borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-3)', marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: 0 }}>
         {!isPremium && (
           <button
             className="btn btn-primary"
@@ -311,7 +347,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               onNavigate?.();
             }}
           >
-            Upgrade to Premium
+            Upgrade
           </button>
         )}
 
@@ -324,6 +360,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
+            minWidth: 0,
             background: 'none',
             border: 'none',
             padding: '6px',
