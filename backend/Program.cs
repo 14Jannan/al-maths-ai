@@ -79,16 +79,25 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp =
 // Seed the Admin role if it doesn't already exist.
 // This runs once at startup, every time the app starts — cheap and idempotent.
 // Seed syllabus reference data if the table is empty
+// Seed syllabus reference data (with embeddings) if the table is empty
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     if (!db.SyllabusEntries.Any())
     {
-        db.SyllabusEntries.AddRange(backend.Data.SyllabusSeedData.GetEntries());
+        var embeddingService = scope.ServiceProvider.GetRequiredService<backend.Services.CohereEmbeddingService>();
+        var entries = backend.Data.SyllabusSeedData.GetEntries();
+
+        foreach (var entry in entries)
+        {
+            var embedding = await embeddingService.GetEmbeddingAsync($"{entry.Topic}: {entry.Content}", "search_document");
+            entry.Embedding = new Pgvector.Vector(embedding);
+        }
+
+        db.SyllabusEntries.AddRange(entries);
         await db.SaveChangesAsync();
     }
 }
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
