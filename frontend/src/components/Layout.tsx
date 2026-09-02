@@ -70,7 +70,7 @@ export function Layout() {
           inside (like a long chat title) can ever force this box wider. */}
       <div
         className="app-sidebar-desktop"
-        style={{ width: 230, flexShrink: 0, overflow: 'hidden', borderRight: '1px solid var(--color-divider)', position: 'sticky', top: 0, height: '100vh' }}
+        style={{ borderRight: '1px solid var(--color-divider)', overflow: 'hidden' }}
       >
         <Sidebar />
       </div>
@@ -118,7 +118,7 @@ export function Layout() {
         </div>
       )}
 
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      <div className="app-content-wrapper" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         {/* Spacer so content isn't hidden behind the fixed mobile top bar */}
         <div className="app-topbar-mobile" style={{ height: 52 }} />
         <Outlet />
