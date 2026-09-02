@@ -10,25 +10,37 @@
 /* Layout responsive rules — explicit media queries instead of relying on
    Tailwind's responsive class names. Sidebar is position:fixed (not sticky)
    so it never shifts during page scroll, regardless of content height. */
-.app-sidebar-desktop {
-  display: flex;
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  width: 230px;
-  z-index: 10;
+/* App shell for logged-in pages: CSS Grid reserves the sidebar's column
+   width automatically — no manual margin-left/position:fixed math needed,
+   which is what was causing the sidebar to overlap content. */
+.app-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
 }
-.app-topbar-mobile { display: none; }
-.app-content-wrapper { margin-left: 0; }
 
-@media (max-width: 767px) {
-  .app-sidebar-desktop { display: none; }
-  .app-topbar-mobile { display: flex; }
+.app-sidebar-desktop {
+  display: none;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-divider);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
 }
+
+.app-topbar-mobile { display: flex; }
 
 @media (min-width: 768px) {
-  .app-content-wrapper { margin-left: 230px; }
+  .app-shell {
+    grid-template-columns: 230px 1fr;
+  }
+  .app-sidebar-desktop {
+    display: flex;
+  }
+  .app-topbar-mobile {
+    display: none;
+  }
 }
 
 html, body {
