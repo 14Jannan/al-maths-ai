@@ -19,7 +19,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        o => o.UseVector()));
 
 // Identity system — user registration, login, password hashing, roles
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
@@ -58,6 +60,7 @@ builder.Services.AddScoped<backend.Services.TokenService>();
 builder.Services.AddScoped<backend.Services.SyllabusRetrievalService>();
 builder.Services.AddHttpClient<backend.Services.IAiProvider, backend.Services.GroqAiProvider>();
 builder.Services.AddHttpClient<backend.Services.SupabaseStorageService>();
+builder.Services.AddHttpClient<backend.Services.CohereEmbeddingService>();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
