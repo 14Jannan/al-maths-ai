@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from '../lib/use-auth';
 import { Math } from '../components/Math';
 
 const steps = [
@@ -9,7 +10,14 @@ const steps = [
 ];
 
 export function Landing() {
+  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
+
+  // Logged-in users hitting "/" should land on their dashboard, not the
+  // marketing page — the landing page is only for logged-out visitors.
+  if (isLoggedIn) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <main style={{ flex: 1 }}>
