@@ -66,18 +66,20 @@ export function Layout() {
   // Logged-in app shell: sidebar + content.
   return (
     <div style={{ ...shellStyle, display: 'flex' }}>
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex" style={{ width: 230, flexShrink: 0, borderRight: '1px solid var(--color-divider)', position: 'sticky', top: 0, height: '100vh' }}>
+      {/* Desktop sidebar — width is fixed and overflow is clipped so nothing
+          inside (like a long chat title) can ever force this box wider. */}
+      <div
+        className="app-sidebar-desktop"
+        style={{ width: 230, flexShrink: 0, overflow: 'hidden', borderRight: '1px solid var(--color-divider)', position: 'sticky', top: 0, height: '100vh' }}
+      >
         <Sidebar />
       </div>
 
-      {/* Mobile top bar + slide-over sidebar.
-          No `display` here — the md:hidden class owns that responsively.
-          An inline display would always beat it (inline styles trump
-          stylesheet rules regardless of media query), keeping this fixed
-          bar visible — and overlapping the page — on desktop too. */}
+      {/* Mobile top bar + slide-over sidebar — shown/hidden via explicit
+          media-query classes (index.css), not Tailwind's md: variants, so
+          this doesn't depend on Tailwind's responsive class generation. */}
       <div
-        className="flex md:hidden"
+        className="app-topbar-mobile"
         style={{
           position: 'fixed',
           top: 0,
@@ -103,12 +105,12 @@ export function Layout() {
 
       {mobileOpen && (
         <div
-          className="md:hidden"
+          className="app-topbar-mobile"
           style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.5)' }}
           onClick={() => setMobileOpen(false)}
         >
           <div
-            style={{ width: 250, height: '100%', background: 'var(--color-bg)', borderRight: '1px solid var(--color-divider)' }}
+            style={{ width: 250, height: '100%', overflow: 'hidden', background: 'var(--color-bg)', borderRight: '1px solid var(--color-divider)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <Sidebar onNavigate={() => setMobileOpen(false)} />
@@ -118,7 +120,7 @@ export function Layout() {
 
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         {/* Spacer so content isn't hidden behind the fixed mobile top bar */}
-        <div className="md:hidden" style={{ height: 52 }} />
+        <div className="app-topbar-mobile" style={{ height: 52 }} />
         <Outlet />
       </div>
     </div>
