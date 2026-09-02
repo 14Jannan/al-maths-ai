@@ -31,7 +31,7 @@ interface Resource {
   mathTopicName: string | null;
 }
 
-type Tab = 'topics' | 'papers' | 'resources';
+type Tab = 'topics' | 'papers' | 'resources' | 'documents';
 
 export function Admin() {
   const [tab, setTab] = useState<Tab>('topics');
@@ -44,7 +44,7 @@ export function Admin() {
       </p>
 
       <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-8)', borderBottom: '1px solid var(--color-divider)' }}>
-        {(['topics', 'papers', 'resources'] as Tab[]).map((t) => (
+        {(['topics', 'papers', 'resources', 'documents'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -64,6 +64,7 @@ export function Admin() {
       {tab === 'topics' && <TopicsAdmin />}
       {tab === 'papers' && <PapersAdmin />}
       {tab === 'resources' && <ResourcesAdmin />}
+      {tab === 'documents' && <DocumentsAdmin />}
     </main>
   );
 }
@@ -353,6 +354,87 @@ function ResourcesAdmin() {
                 <td>{r.mathTopicName}</td>
                 <td style={{ textAlign: 'right' }}>
                   <button className="btn btn-ghost" style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }} onClick={() => deleteResource.mutate(r.id)}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+// ───────────────────────── Documents ─────────────────────────
+
+function DocumentsAdmin() {
+  const queryClient = useQueryClient();
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+
+  const { data: documents, isLoading } = useQuery({
+    queryKey: ['documents'],
+    queryFn: () => apiFetch<{ sourceTitle: string; chunkCount: number; uploadedAt: string }[]>('/api/Documents'),
+  });
+
+  const deleteDoc = useMutation({
+    mutationFn: (sourceTitle: string) => apiFetch<void>(`/api/Documents/${encodeURIComponent(sourceTitle)}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
+  });
+
+  async function handleUpload() {
+    if (!file) return;
+    setIsUploading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await apiFetch<{ sourceTitle: string; chunksCreated: number }>('/api/Documents/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      setResult(`"${res.sourceTitle}" processed — ${res.chunksCreated} chunks indexed.`);
+      setFile(null);
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)', marginBottom: 'var(--space-4)' }}>
+        Upload a PDF (notes, textbook chapter, etc.) — it will be split into searchable chunks the AI tutor can reference alongside the official syllabus.
+      </p>
+
+      <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+        <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        <button className="btn btn-primary" onClick={handleUpload} disabled={!file || isUploading}>
+          {isUploading ? 'Processing…' : 'Upload & Index'}
+        </button>
+      </div>
+
+      {error && <div style={{ fontSize: 13, color: 'var(--color-neutral-300)', marginBottom: 'var(--space-4)' }}>{error}</div>}
+      {result && <div style={{ fontSize: 13, color: 'var(--color-accent)', marginBottom: 'var(--space-4)' }}>{result}</div>}
+
+      {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>}
+
+      {documents && documents.length > 0 && (
+        <table className="table">
+          <thead><tr><th>Document</th><th>Chunks</th><th></th></tr></thead>
+          <tbody>
+            {documents.map((d) => (
+              <tr key={d.sourceTitle}>
+                <td style={{ fontWeight: 500 }}>{d.sourceTitle}</td>
+                <td>{d.chunkCount}</td>
+                <td style={{ textAlign: 'right' }}>
+                  <button className="btn btn-ghost" style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }} onClick={() => deleteDoc.mutate(d.sourceTitle)}>
                     Delete
                   </button>
                 </td>
