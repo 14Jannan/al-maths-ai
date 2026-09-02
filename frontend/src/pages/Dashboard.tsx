@@ -42,9 +42,9 @@ export function Dashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <main style={{ flex: 1, width: '100%', maxWidth: 1180, margin: '0 auto', padding: 'clamp(24px,4vw,44px) clamp(18px,4vw,40px) 64px' }}>
-      <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h2 style={{ marginBottom: 4 }}>{greeting}{email ? `, ${email.split('@')[0]}` : ''}</h2>
+    <main style={{ flex: 1, width: '100%', maxWidth: 1100, margin: '0 auto', padding: 'clamp(20px,4vw,40px) clamp(18px,4vw,40px) 56px' }}>
+      <div style={{ marginBottom: 'var(--space-6)' }}>
+        <h3 style={{ marginBottom: 4, fontWeight: 600 }}>{greeting}{email ? `, ${email.split('@')[0]}` : ''}</h3>
         <p style={{ margin: 0, fontSize: 14, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>
           {recentChat ? 'Pick up where you left off, or start something new.' : 'Ask your first question to get started.'}
         </p>
@@ -58,11 +58,12 @@ export function Dashboard() {
             gridColumn: 'span 2',
             padding: 'var(--space-6)',
             gap: 'var(--space-4)',
+            minWidth: 0,
             background: 'linear-gradient(135deg, var(--color-surface), color-mix(in srgb, var(--color-accent) 6%, var(--color-surface)))',
           }}
         >
           <div className="card-kicker">AI Tutor</div>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 22 }}>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {recentChat ? `Continue "${recentChat.title}"` : 'Have a question right now?'}
           </div>
           <div style={{ fontSize: 13, color: 'color-mix(in srgb, var(--color-text) 62%, transparent)' }}>
@@ -111,7 +112,7 @@ export function Dashboard() {
       </div>
 
       {/* Topics */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 'var(--space-4)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 'var(--space-3)' }}>
         <h6 style={{ color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', margin: 0 }}>Topics</h6>
         <button className="btn btn-ghost" style={{ fontSize: 13 }} onClick={() => navigate('/topics')}>All topics →</button>
       </div>
