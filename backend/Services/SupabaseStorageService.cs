@@ -14,13 +14,12 @@ public class SupabaseStorageService
     // Uploads a file's bytes to the "question-images" bucket and returns its
     // public URL. We generate the file path ourselves (userId + guid) so
     // filenames can never collide or leak anything about the original name.
-    public async Task<string> UploadQuestionImageAsync(string userId, Stream fileStream, string contentType, string fileExtension)
+        public async Task<string> UploadDocumentAsync(string bucket, string fileName, Stream fileStream, string contentType)
     {
         var supabaseUrl = _configuration["Supabase:Url"]!;
         var serviceRoleKey = _configuration["Supabase:ServiceRoleKey"]!;
 
-        var fileName = $"{userId}/{Guid.NewGuid()}{fileExtension}";
-        var uploadUrl = $"{supabaseUrl}/storage/v1/object/question-images/{fileName}";
+        var uploadUrl = $"{supabaseUrl}/storage/v1/object/{bucket}/{fileName}";
 
         var request = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
         request.Headers.Add("Authorization", $"Bearer {serviceRoleKey}");
@@ -31,9 +30,9 @@ public class SupabaseStorageService
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
-            throw new Exception($"Image upload failed: {error}");
+            throw new Exception($"Document upload failed: {error}");
         }
 
-        return $"{supabaseUrl}/storage/v1/object/public/question-images/{fileName}";
+        return $"{supabaseUrl}/storage/v1/object/public/{bucket}/{fileName}";
     }
 }
