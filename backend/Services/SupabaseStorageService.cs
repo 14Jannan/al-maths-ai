@@ -14,7 +14,16 @@ public class SupabaseStorageService
     // Uploads a file's bytes to the "question-images" bucket and returns its
     // public URL. We generate the file path ourselves (userId + guid) so
     // filenames can never collide or leak anything about the original name.
-        public async Task<string> UploadDocumentAsync(string bucket, string fileName, Stream fileStream, string contentType)
+    public async Task<string> UploadQuestionImageAsync(string userId, Stream fileStream, string contentType, string extension)
+    {
+        var fileName = $"{userId}/{Guid.NewGuid()}{extension}";
+        return await UploadDocumentAsync("question-images", fileName, fileStream, contentType);
+    }
+
+    // Uploads a file's bytes to an arbitrary bucket/path and returns its
+    // public URL — used for admin document uploads, where the caller
+    // decides the bucket and file name.
+    public async Task<string> UploadDocumentAsync(string bucket, string fileName, Stream fileStream, string contentType)
     {
         var supabaseUrl = _configuration["Supabase:Url"]!;
         var serviceRoleKey = _configuration["Supabase:ServiceRoleKey"]!;
