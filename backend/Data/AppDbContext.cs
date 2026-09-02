@@ -19,4 +19,13 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ChatConversation> ChatConversations { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<SyllabusEntry> SyllabusEntries { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresExtension("vector");
+        modelBuilder.Entity<SyllabusEntry>()
+            .Property(e => e.Embedding)
+            .HasColumnType("vector(1024)");
+    }
 }

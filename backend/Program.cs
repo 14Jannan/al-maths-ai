@@ -83,8 +83,20 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp =
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (!db.SyllabusEntries.Any())
+
+    // Rows seeded before the Embedding column existed are still sitting there
+    // with Embedding = NULL — !Any() alone would never catch that and those
+    // rows would silently never get embedded. Wipe and reseed whenever any
+    // row is missing its embedding, not just when the table is empty.
+    var hasUnembedded = await db.SyllabusEntries.AnyAsync(e => e.Embedding == null);
+    if (!db.SyllabusEntries.Any() || hasUnembedded)
     {
+        if (hasUnembedded)
+        {
+            db.SyllabusEntries.RemoveRange(db.SyllabusEntries);
+            await db.SaveChangesAsync();
+        }
+
         var embeddingService = scope.ServiceProvider.GetRequiredService<backend.Services.CohereEmbeddingService>();
         var entries = backend.Data.SyllabusSeedData.GetEntries();
 
