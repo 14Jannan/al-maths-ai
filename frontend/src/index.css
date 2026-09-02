@@ -7,18 +7,28 @@
   30% { opacity: 1; transform: translateY(-2px); }
 }
 
-/* Layout.tsx uses these two classes to make the desktop sidebar and the
-   mobile top bar/drawer mutually exclusive by width — but nothing here
-   ever defined them, so both rendered unconditionally at every width:
-   the fixed mobile bar sat on top of the desktop sidebar's own header,
-   and the sidebar kept eating 230px of width it shouldn't have on
-   narrow viewports, squeezing page content until it overflowed. */
-.app-sidebar-desktop { display: flex; }
+/* Layout responsive rules — explicit media queries instead of relying on
+   Tailwind's responsive class names. Sidebar is position:fixed (not sticky)
+   so it never shifts during page scroll, regardless of content height. */
+.app-sidebar-desktop {
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 230px;
+  z-index: 10;
+}
 .app-topbar-mobile { display: none; }
+.app-content-wrapper { margin-left: 0; }
 
 @media (max-width: 767px) {
   .app-sidebar-desktop { display: none; }
   .app-topbar-mobile { display: flex; }
+}
+
+@media (min-width: 768px) {
+  .app-content-wrapper { margin-left: 230px; }
 }
 
 html, body {
