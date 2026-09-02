@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 using backend.Data;
 
 namespace backend.Services;
@@ -6,40 +7,33 @@ namespace backend.Services;
 public class SyllabusRetrievalService
 {
     private readonly AppDbContext _context;
+    private readonly CohereEmbeddingService _embeddingService;
 
-    public SyllabusRetrievalService(AppDbContext context)
+    public SyllabusRetrievalService(AppDbContext context, CohereEmbeddingService embeddingService)
     {
         _context = context;
+        _embeddingService = embeddingService;
     }
 
-    // Simple keyword-overlap scoring: not true semantic search, but effective
-    // for a fixed set of ~35 well-labelled topics. Each entry's Topic and
-    // Keywords fields are checked against the question text; the more words
-    // that appear, the more relevant the entry is assumed to be.
     public async Task<string> GetRelevantSyllabusContextAsync(string question, int topN = 3)
     {
-        var entries = await _context.SyllabusEntries.ToListAsync();
-        var questionLower = question.ToLowerInvariant();
+        var queryEmbedding = await _embeddingService.GetEmbeddingAsync(question, "search_query");
+        var queryVector = new Pgvector.Vector(queryEmbedding);
 
-        var scored = entries
-            .Select(e =>
-            {
-                var keywordList = e.Keywords.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-                var score = keywordList.Count(k => questionLower.Contains(k.ToLowerInvariant()));
-                if (questionLower.Contains(e.Topic.ToLowerInvariant())) score += 2;
-                return (Entry: e, Score: score);
-            })
-            .Where(x => x.Score > 0)
-            .OrderByDescending(x => x.Score)
+        // CosineDistance: 0 = identical meaning, 2 = opposite meaning.
+        // Ordering ascending gives the most semantically relevant entries first.
+        var entries = await _context.SyllabusEntries
+            .Where(e => e.Embedding != null)
+            .OrderBy(e => e.Embedding!.CosineDistance(queryVector))
             .Take(topN)
-            .ToList();
+            .ToListAsync();
 
-        if (scored.Count == 0)
+        if (entries.Count == 0)
         {
             return string.Empty;
         }
 
-        var lines = scored.Select(x => $"- {x.Entry.Topic} ({x.Entry.Paper}): {x.Entry.Content}");
+        var lines = entries.Select(e => $"- {e.Topic} ({e.Paper}): {e.Content}");
         return string.Join("\n", lines);
     }
 }
