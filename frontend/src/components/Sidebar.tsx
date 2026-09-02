@@ -100,7 +100,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <span style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>iMath</span>
       </Link>
 
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0, overflowY: 'auto' }}>
+      {/* paddingRight keeps every item's active/hover background pill a few
+          px clear of the sidebar's right border — without it, the pill's
+          box (which stretches to fill the nav's width) can sit flush
+          against that divider and read as the highlight bleeding past it. */}
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
         <Link
           to="/dashboard"
           onClick={onNavigate}
