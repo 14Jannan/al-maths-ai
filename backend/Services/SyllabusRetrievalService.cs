@@ -20,20 +20,24 @@ public class SyllabusRetrievalService
         var queryEmbedding = await _embeddingService.GetEmbeddingAsync(question, "search_query");
         var queryVector = new Pgvector.Vector(queryEmbedding);
 
-        // CosineDistance: 0 = identical meaning, 2 = opposite meaning.
-        // Ordering ascending gives the most semantically relevant entries first.
-        var entries = await _context.SyllabusEntries
+        var syllabusEntries = await _context.SyllabusEntries
             .Where(e => e.Embedding != null)
             .OrderBy(e => e.Embedding!.CosineDistance(queryVector))
             .Take(topN)
+            .Select(e => $"- [Official syllabus] {e.Topic} ({e.Paper}): {e.Content}")
             .ToListAsync();
 
-        if (entries.Count == 0)
-        {
-            return string.Empty;
-        }
+        // Search uploaded document chunks too (admin-uploaded notes/materials),
+        // clearly labelled so the AI knows this came from supplementary
+        // material rather than the official syllabus itself.
+        var documentChunks = await _context.DocumentChunks
+            .Where(d => d.Embedding != null)
+            .OrderBy(d => d.Embedding!.CosineDistance(queryVector))
+            .Take(topN)
+            .Select(d => $"- [From uploaded material \"{d.SourceTitle}\"]: {d.ChunkText}")
+            .ToListAsync();
 
-        var lines = entries.Select(e => $"- {e.Topic} ({e.Paper}): {e.Content}");
-        return string.Join("\n", lines);
+        var all = syllabusEntries.Concat(documentChunks).ToList();
+        return all.Count == 0 ? string.Empty : string.Join("\n", all);
     }
 }
