@@ -9,7 +9,6 @@ import { Admin } from './pages/Admin';
 import { Dashboard } from './pages/Dashboard';
 import { Tutor } from './pages/Tutor';
 import { Topics } from './pages/Topics';
-import { ComingSoon } from './pages/ComingSoon';
 import { Pricing } from './pages/Pricing';
 import { Account } from './pages/Account';
 import { Papers } from './pages/Papers';
@@ -52,7 +51,7 @@ function App() {
           path="/papers"
           element={
             <ProtectedRoute>
-              <ComingSoon title="Past Papers" />
+              <Papers />
             </ProtectedRoute>
           }
         />
@@ -60,7 +59,7 @@ function App() {
           path="/resources"
           element={
             <ProtectedRoute>
-              <ComingSoon title="Resources" />
+              <Resources />
             </ProtectedRoute>
           }
         />
@@ -68,7 +67,7 @@ function App() {
           path="/account"
           element={
             <ProtectedRoute>
-              <ComingSoon title="Account" />
+              <Account />
             </ProtectedRoute>
           }
         />
@@ -80,30 +79,6 @@ function App() {
             </AdminRoute>
           }
         />
-        <Route
-            path="/account"
-            element={
-              <ProtectedRoute>
-                <Account />
-              </ProtectedRoute>
-            }
-        />
-        <Route
-            path="/papers"
-            element={
-                <ProtectedRoute>
-                    <Papers />
-                </ProtectedRoute>
-            }
-        />
-        <Route
-            path="/resources"
-            element={
-              <ProtectedRoute>
-                <Resources />
-              </ProtectedRoute>
-            }
-          />
       </Route>
     </Routes>
   );
