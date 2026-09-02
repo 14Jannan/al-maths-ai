@@ -14,7 +14,7 @@ public class GroqAiProvider : IAiProvider
         _configuration = configuration;
     }
 
-    public async Task<string> GetCompletionAsync(List<ChatTurn> history, string userMessage)
+    public async Task<string> GetCompletionAsync(List<ChatTurn> history, string userMessage, string syllabusContext)
     {
         var apiKey = _configuration["Groq:ApiKey"];
         var model = _configuration["Groq:Model"];
@@ -38,6 +38,15 @@ FORMAT RULE (keep it chat-like, not a textbook document):
 
 CONTEXT RULE:
 Earlier messages in this conversation are provided for context. Refer back to them naturally if the student asks a follow-up (e.g. 'what about part b', 'explain that step again') instead of treating each message as unrelated.";
+        if (!string.IsNullOrWhiteSpace(syllabusContext))
+        {
+            systemPrompt += $@"
+
+            OFFICIAL SYLLABUS REFERENCE (authoritative — use this to decide what is/isn't in scope):
+            {syllabusContext}
+
+            If the student's question relates to a technique not mentioned in the reference above, treat it as outside the A/L syllabus per the SYLLABUS CERTAINTY RULE.";
+        }
 
         var messages = new List<object> { new { role = "system", content = systemPrompt } };
 

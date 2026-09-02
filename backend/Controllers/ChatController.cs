@@ -19,11 +19,14 @@ public class ChatController : ControllerBase
     private readonly AppDbContext _context;
     private readonly SupabaseStorageService _storageService;
 
-    public ChatController(IAiProvider aiProvider, AppDbContext context, SupabaseStorageService storageService)
+    private readonly SyllabusRetrievalService _syllabusService;
+
+    public ChatController(IAiProvider aiProvider, AppDbContext context, SupabaseStorageService storageService, SyllabusRetrievalService syllabusService)
     {
         _aiProvider = aiProvider;
         _context = context;
         _storageService = storageService;
+        _syllabusService = syllabusService;
     }
 
     private string CurrentUserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
@@ -92,7 +95,8 @@ public class ChatController : ControllerBase
 
         try
         {
-            var reply = await _aiProvider.GetCompletionAsync(recentHistory, dto.Message);
+            var syllabusContext = await _syllabusService.GetRelevantSyllabusContextAsync(dto.Message);
+            var reply = await _aiProvider.GetCompletionAsync(recentHistory, dto.Message, syllabusContext);
 
             _context.ChatMessages.Add(new ChatMessage
             {

@@ -55,6 +55,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<backend.Services.TokenService>();
+builder.Services.AddScoped<backend.Services.SyllabusRetrievalService>();
 builder.Services.AddHttpClient<backend.Services.IAiProvider, backend.Services.GroqAiProvider>();
 builder.Services.AddHttpClient<backend.Services.SupabaseStorageService>();
 
