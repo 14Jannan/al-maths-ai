@@ -7,12 +7,18 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Allow the frontend (running on a different port) to call this API
+// Allow the frontend (running on a different port) to call this API.
+// Vite bumps to the next free port (5174, 5175, ...) whenever 5173 is
+// already taken by another dev server instance, which broke CORS every
+// time that happened — allow any localhost/127.0.0.1 origin instead of
+// hardcoding one port, since this is a local-dev-only policy anyway.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.SetIsOriginAllowed(origin =>
+                Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+                (uri.Host == "localhost" || uri.Host == "127.0.0.1"))
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
