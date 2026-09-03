@@ -5,6 +5,7 @@ import { AdminRoute } from './components/AdminRoute';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { VerifyOtp } from './pages/VerifyOtp';
 import { Admin } from './pages/Admin';
 import { Dashboard } from './pages/Dashboard';
 import { Tutor } from './pages/Tutor';
@@ -21,6 +22,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/pricing" element={<Pricing />} />
 
         <Route
