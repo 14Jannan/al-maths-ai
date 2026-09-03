@@ -4,6 +4,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../lib/use-auth';
 import { getSubscriptionStatus } from '../lib/payments';
 import { listConversations, renameConversation, deleteConversation, type ConversationSummary } from '../lib/conversations';
+import { GlobalSearch } from './GlobalSearch';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -118,6 +119,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </span>
         <span style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>iMath</span>
       </Link>
+      <div style={{ marginBottom: 'var(--space-4)' }}>
+        <GlobalSearch />
+      </div>
 
       <nav
         style={{
