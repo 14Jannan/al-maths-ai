@@ -62,6 +62,7 @@ builder.Services.AddHttpClient<backend.Services.IAiProvider, backend.Services.Gr
 builder.Services.AddHttpClient<backend.Services.SupabaseStorageService>();
 builder.Services.AddHttpClient<backend.Services.CohereEmbeddingService>();
 builder.Services.AddScoped<backend.Services.DocumentProcessingService>();
+builder.Services.AddScoped<backend.Services.EmailService>();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
