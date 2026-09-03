@@ -21,6 +21,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<SyllabusEntry> SyllabusEntries { get; set; }
     public DbSet<DocumentChunk> DocumentChunks { get; set; }
     public DbSet<EmailOtp> EmailOtps { get; set; }
+    public DbSet<ExamPaperDocument> ExamPaperDocuments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
