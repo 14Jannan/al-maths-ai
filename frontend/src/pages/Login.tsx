@@ -20,6 +20,10 @@ export function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        navigate('/verify-otp', { state: { email } });
+        return;
+      }
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
     } finally {
       setIsSubmitting(false);
