@@ -41,7 +41,11 @@ public class AuthController : ControllerBase
 
         if (!result.Succeeded)
         {
-            return BadRequest(result.Errors);
+            // apiFetch only unwraps a { error } shaped body — the raw
+            // IdentityError[] Identity returns by default gets silently
+            // swallowed into a generic "Request failed" message otherwise.
+            var message = string.Join(" ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { error = message });
         }
 
         var code = GenerateOtpCode();
@@ -71,7 +75,7 @@ public class AuthController : ControllerBase
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user == null)
         {
-            return NotFound("No account found for this email");
+            return NotFound(new { error = "No account found for this email" });
         }
 
         var otp = await _context.EmailOtps
@@ -81,11 +85,11 @@ public class AuthController : ControllerBase
 
         if (otp == null || otp.Code != dto.Code)
         {
-            return BadRequest("Invalid verification code");
+            return BadRequest(new { error = "Invalid verification code" });
         }
         if (otp.ExpiresAt < DateTime.UtcNow)
         {
-            return BadRequest("This code has expired. Request a new one.");
+            return BadRequest(new { error = "This code has expired. Request a new one." });
         }
 
         user.EmailConfirmed = true;
@@ -130,13 +134,13 @@ public class AuthController : ControllerBase
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user == null)
         {
-            return Unauthorized("Invalid email or password");
+            return Unauthorized(new { error = "Invalid email or password" });
         }
 
         var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
         if (!result.Succeeded)
         {
-            return Unauthorized("Invalid email or password");
+            return Unauthorized(new { error = "Invalid email or password" });
         }
 
         if (!user.EmailConfirmed)
