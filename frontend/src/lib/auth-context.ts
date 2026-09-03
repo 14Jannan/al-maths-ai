@@ -4,8 +4,10 @@ export interface AuthContextValue {
   email: string | null;
   isLoggedIn: boolean;
   isAdmin: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  verifyOtp: (email: string, code: string) => Promise<void>;
+  resendOtp: (email: string) => Promise<void>;
   logout: () => void;
 }
 
