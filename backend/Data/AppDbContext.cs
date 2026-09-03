@@ -20,6 +20,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<SyllabusEntry> SyllabusEntries { get; set; }
     public DbSet<DocumentChunk> DocumentChunks { get; set; }
+    public DbSet<EmailOtp> EmailOtps { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
