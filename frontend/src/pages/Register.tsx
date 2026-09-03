@@ -24,7 +24,7 @@ export function Register() {
     setIsSubmitting(true);
     try {
       await register(email, password);
-      navigate('/dashboard');
+      navigate('/verify-otp', { state: { email } });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
     } finally {
