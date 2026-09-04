@@ -116,10 +116,26 @@ public class ChatController : ControllerBase
                 }
                 usage.Count += 1;
             }
+                        // Suggest real, existing past paper questions related to this
+            // question's keywords — never AI-generated, so these links are
+            // always accurate and never hallucinated question numbers.
+            var keywords = dto.Message.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Where(w => w.Length > 3)
+                .Take(3);
+
+            var relatedQuery = _context.PastPapers.AsQueryable();
+            foreach (var word in keywords)
+            {
+                relatedQuery = relatedQuery.Where(p => EF.Functions.ILike(p.QuestionText, $"%{word}%"));
+            }
+            var relatedPapers = await relatedQuery
+                .Take(3)
+                .Select(p => new RelatedPastPaperDto { Id = p.Id, Year = p.Year, Paper = p.Paper, QuestionNumber = p.QuestionNumber })
+                .ToListAsync();
 
             await _context.SaveChangesAsync();
 
-            return Ok(new ChatResponseDto { Reply = reply, ConversationId = conversation.Id });
+            return Ok(new ChatResponseDto { Reply = reply, ConversationId = conversation.Id, RelatedPastPapers = relatedPapers });
         }
         catch (Exception ex)
         {

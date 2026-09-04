@@ -3,5 +3,14 @@ namespace backend.DTOs;
 public class ChatResponseDto
 {
     public string Reply { get; set; } = string.Empty;
-    public int ConversationId { get; set; } // so the frontend knows which conversation this belongs to
+    public int ConversationId { get; set; }
+    public List<RelatedPastPaperDto> RelatedPastPapers { get; set; } = new();
+}
+
+public class RelatedPastPaperDto
+{
+    public int Id { get; set; }
+    public int Year { get; set; }
+    public string Paper { get; set; } = string.Empty;
+    public string QuestionNumber { get; set; } = string.Empty;
 }
