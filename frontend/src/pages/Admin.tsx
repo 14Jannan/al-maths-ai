@@ -32,10 +32,20 @@ interface Resource {
   mathTopicName: string | null;
 }
 
-type Tab = 'topics' | 'papers' | 'resources' | 'documents' | 'exampapers';
+type Tab = 'overview' | 'users' | 'topics' | 'papers' | 'resources' | 'documents' | 'exampapers';
+
+const TAB_LABELS: Record<Tab, string> = {
+  overview: 'Overview',
+  users: 'Users',
+  topics: 'Topics',
+  papers: 'Papers',
+  resources: 'Resources',
+  documents: 'Documents',
+  exampapers: 'Exam Papers',
+};
 
 export function Admin() {
-  const [tab, setTab] = useState<Tab>('topics');
+  const [tab, setTab] = useState<Tab>('overview');
 
   return (
     <main style={{ flex: 1, width: '100%', maxWidth: 1000, margin: '0 auto', padding: 'clamp(22px,4vw,40px) clamp(18px,4vw,40px) 64px' }}>
@@ -44,8 +54,8 @@ export function Admin() {
         Manage the content students see.
       </p>
 
-      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-8)', borderBottom: '1px solid var(--color-divider)' }}>
-        {(['topics', 'papers', 'resources', 'documents', 'exampapers'] as Tab[]).map((t) => (
+      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-8)', borderBottom: '1px solid var(--color-divider)', flexWrap: 'wrap' }}>
+        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -54,14 +64,15 @@ export function Admin() {
               borderRadius: 0,
               borderBottom: tab === t ? '2px solid var(--color-accent)' : '2px solid transparent',
               color: tab === t ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 55%, transparent)',
-              textTransform: 'capitalize',
             }}
           >
-            {t}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>
 
+      {tab === 'overview' && <OverviewAdmin />}
+      {tab === 'users' && <UsersAdmin />}
       {tab === 'topics' && <TopicsAdmin />}
       {tab === 'papers' && <PapersAdmin />}
       {tab === 'resources' && <ResourcesAdmin />}
@@ -607,5 +618,111 @@ function ExamPapersAdmin() {
         </table>
       )}
     </div>
+  );
+}
+
+// ───────────────────────── Overview ─────────────────────────
+
+interface AdminOverview {
+  totalUsers: number;
+  adminCount: number;
+  premiumSubscribers: number;
+  topicsCount: number;
+  pastPaperQuestionsCount: number;
+  resourcesCount: number;
+  examPaperDocumentsCount: number;
+  documentChunksCount: number;
+  chatMessagesToday: number;
+}
+
+function StatCard({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="card" style={{ padding: 'var(--space-4)', gap: 6 }}>
+      <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-heading)', fontSize: 26 }}>{value}</div>
+    </div>
+  );
+}
+
+function OverviewAdmin() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['adminOverview'],
+    queryFn: () => apiFetch<AdminOverview>('/api/Admin/overview'),
+  });
+
+  if (isLoading || !data) return <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>;
+
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
+        <StatCard label="Total users" value={data.totalUsers} />
+        <StatCard label="Premium subscribers" value={data.premiumSubscribers} />
+        <StatCard label="Admins" value={data.adminCount} />
+        <StatCard label="Chat messages today" value={data.chatMessagesToday} />
+      </div>
+
+      <h6 style={{ color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 'var(--space-4)' }}>Content</h6>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 'var(--space-3)' }}>
+        <StatCard label="Topics" value={data.topicsCount} />
+        <StatCard label="Past paper questions" value={data.pastPaperQuestionsCount} />
+        <StatCard label="Resources" value={data.resourcesCount} />
+        <StatCard label="Full exam papers" value={data.examPaperDocumentsCount} />
+        <StatCard label="Document chunks (RAG)" value={data.documentChunksCount} />
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────── Users ─────────────────────────
+
+interface AdminUser {
+  id: string;
+  email: string;
+  emailConfirmed: boolean;
+  isAdmin: boolean;
+  isPremium: boolean;
+  subscriptionExpiresAt: string | null;
+}
+
+function UsersAdmin() {
+  const queryClient = useQueryClient();
+
+  const { data: users, isLoading } = useQuery({
+    queryKey: ['adminUsers'],
+    queryFn: () => apiFetch<AdminUser[]>('/api/Admin/users'),
+  });
+
+  const setRole = useMutation({
+    mutationFn: ({ id, isAdmin }: { id: string; isAdmin: boolean }) =>
+      apiFetch<void>(`/api/Admin/users/${id}/role`, { method: 'POST', body: JSON.stringify({ isAdmin }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminUsers'] }),
+  });
+
+  if (isLoading) return <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>;
+
+  return (
+    <table className="table">
+      <thead><tr><th>Email</th><th>Verified</th><th>Plan</th><th>Role</th><th></th></tr></thead>
+      <tbody>
+        {(users ?? []).map((u) => (
+          <tr key={u.id}>
+            <td>{u.email}</td>
+            <td>{u.emailConfirmed ? '✓' : '—'}</td>
+            <td>{u.isPremium ? `Premium (until ${u.subscriptionExpiresAt})` : 'Free'}</td>
+            <td>{u.isAdmin ? <span className="tag tag-accent">Admin</span> : <span className="tag tag-neutral">Student</span>}</td>
+            <td style={{ textAlign: 'right' }}>
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: 12.5 }}
+                onClick={() => setRole.mutate({ id: u.id, isAdmin: !u.isAdmin })}
+                disabled={setRole.isPending}
+              >
+                {u.isAdmin ? 'Remove Admin' : 'Make Admin'}
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
