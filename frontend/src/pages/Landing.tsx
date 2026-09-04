@@ -1,6 +1,13 @@
 import { Navigate, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../lib/use-auth';
+import { apiFetch } from '../lib/api';
 import { Math } from '../components/Math';
+
+interface PublicStats {
+  topicsCount: number;
+  yearsCovered: number;
+}
 
 const steps = [
   { n: '01', title: 'Ask in English or Tamil', body: 'Type your question the way you\u2019d ask a teacher — the tutor answers in the same language.' },
@@ -12,6 +19,14 @@ const steps = [
 export function Landing() {
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
+
+  // Public endpoint (no auth) — logged-out visitors have no token, and this
+  // is exactly the audience the landing page's stat strip is for.
+  const { data: stats } = useQuery({
+    queryKey: ['publicStats'],
+    queryFn: () => apiFetch<PublicStats>('/api/Stats'),
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Logged-in users hitting "/" should land on their dashboard, not the
   // marketing page — the landing page is only for logged-out visitors.
@@ -150,8 +165,8 @@ export function Landing() {
           }}
         >
           {[
-            { value: '6 years', label: 'of past papers, question by question' },
-            { value: '20 topics', label: 'mapped to the official syllabus sections' },
+            { value: `${stats?.yearsCovered ?? 10} years`, label: 'of past papers, question by question' },
+            { value: `${stats?.topicsCount ?? 20} topics`, label: 'mapped to the official syllabus sections' },
             { value: '2 languages', label: 'explanations in English and Tamil' },
             { value: '0 detours', label: 'anything outside the syllabus is labelled' },
           ].map((stat) => (
