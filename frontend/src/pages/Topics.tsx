@@ -65,9 +65,9 @@ export function Topics() {
             <button
               className="btn btn-primary"
               style={{ fontSize: 12.5, padding: '5px 11px', alignSelf: 'flex-start' }}
-              onClick={() => navigate('/tutor', { state: { topic: t.name } })}
+              onClick={() => navigate('/resources', { state: { topicId: t.id, topicName: t.name } })}
             >
-              Ask tutor
+              View resources
             </button>
           </div>
         ))}

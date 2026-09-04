@@ -136,6 +136,21 @@ using (var scope = app.Services.CreateScope())
         }
     }
     await db.SaveChangesAsync();
+
+    // Backfill embeddings for any Resource created before the Embedding
+    // column existed. Unlike SyllabusEntries, these are admin-curated real
+    // links — update in place, never delete/reseed them.
+    var unembeddedResources = await db.Resources.Where(r => r.Embedding == null).ToListAsync();
+    if (unembeddedResources.Count > 0)
+    {
+        var embeddingService = scope.ServiceProvider.GetRequiredService<backend.Services.CohereEmbeddingService>();
+        foreach (var resource in unembeddedResources)
+        {
+            var embedding = await embeddingService.GetEmbeddingAsync(resource.Title, "search_document");
+            resource.Embedding = new Pgvector.Vector(embedding);
+        }
+        await db.SaveChangesAsync();
+    }
 }
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

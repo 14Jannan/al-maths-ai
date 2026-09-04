@@ -21,6 +21,7 @@ export function Register() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +42,7 @@ export function Register() {
 
     setIsSubmitting(true);
     try {
-      await register(email, password);
+      await register(email, username, password);
       navigate('/verify-otp', { state: { email } });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
@@ -66,6 +67,18 @@ export function Register() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
+              required
+            />
+          </div>
+
+          <div className="field">
+            <label>Username</label>
+            <input
+              className="input"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="How should we greet you?"
+              maxLength={40}
               required
             />
           </div>

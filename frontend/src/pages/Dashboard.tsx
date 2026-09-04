@@ -13,7 +13,7 @@ interface MathTopic {
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { email } = useAuth();
+  const { email, username } = useAuth();
 
   const { data: topics, isLoading: topicsLoading } = useQuery({
     queryKey: ['mathTopics'],
@@ -44,7 +44,7 @@ export function Dashboard() {
   return (
     <main style={{ flex: 1, width: '100%', maxWidth: 1100, margin: '0 auto', padding: 'clamp(20px,4vw,40px) clamp(18px,4vw,40px) 56px' }}>
       <div style={{ marginBottom: 'var(--space-6)' }}>
-        <h3 style={{ marginBottom: 4, fontWeight: 600 }}>{greeting}{email ? `, ${email.split('@')[0]}` : ''}</h3>
+        <h3 style={{ marginBottom: 4, fontWeight: 600 }}>{greeting}{username ? `, ${username}` : email ? `, ${email.split('@')[0]}` : ''}</h3>
         <p style={{ margin: 0, fontSize: 14, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>
           {recentChat ? 'Pick up where you left off, or start something new.' : 'Ask your first question to get started.'}
         </p>

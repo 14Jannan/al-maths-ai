@@ -120,19 +120,20 @@ public class ChatController : ControllerBase
                 }
                 usage.Count += 1;
             }
-            // Suggest real, existing past paper questions related to this
-            // question — never AI-generated, so these links are always
-            // accurate and never hallucinated question numbers. A failure
+            // Suggest real, existing past paper questions and admin-curated
+            // resources related to this question — never AI-generated, so
+            // these are always accurate and never hallucinated. A failure
             // here (e.g. the embedding API is briefly down) shouldn't sink
-            // an otherwise-successful reply, so it's isolated in its own
-            // try/catch rather than sharing the outer one.
+            // an otherwise-successful reply, so it's isolated from the outer
+            // try/catch that guards the AI call itself.
             var relatedPapers = new List<RelatedPastPaperDto>();
+            var relatedResources = new List<RelatedResourceDto>();
             try
             {
-                // Semantic search for related past paper questions — embeddings
-                // catch related meaning even when the exact words differ
-                // (e.g. "rate of change" question still matches a
-                // "differentiation" past paper question).
+                // Semantic search — embeddings catch related meaning even
+                // when the exact words differ (e.g. a "rate of change"
+                // question still matches a "differentiation" past paper
+                // question and a "Differentiation basics" video).
                 var questionEmbedding = await _embeddingService.GetEmbeddingAsync(dto.Message, "search_query");
                 var questionVector = new Pgvector.Vector(questionEmbedding);
 
@@ -142,16 +143,24 @@ public class ChatController : ControllerBase
                     .Take(3)
                     .Select(p => new RelatedPastPaperDto { Id = p.Id, Year = p.Year, Paper = p.Paper, QuestionNumber = p.QuestionNumber })
                     .ToListAsync();
+
+                relatedResources = await _context.Resources
+                    .Where(r => r.Embedding != null)
+                    .OrderBy(r => r.Embedding!.CosineDistance(questionVector))
+                    .Take(2)
+                    .Select(r => new RelatedResourceDto { Id = r.Id, Title = r.Title, Url = r.Url, SourceType = r.SourceType })
+                    .ToListAsync();
             }
             catch
             {
-                // Related-papers is a bonus, not the point of the response —
-                // fall through with an empty list rather than failing the chat.
+                // Related content is a bonus, not the point of the response —
+                // fall through with whatever lists were already built rather
+                // than failing the chat.
             }
 
             await _context.SaveChangesAsync();
 
-            return Ok(new ChatResponseDto { Reply = reply, ConversationId = conversation.Id, RelatedPastPapers = relatedPapers });
+            return Ok(new ChatResponseDto { Reply = reply, ConversationId = conversation.Id, RelatedPastPapers = relatedPapers, RelatedResources = relatedResources });
         }
         catch (Exception ex)
         {

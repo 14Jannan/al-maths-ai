@@ -28,6 +28,7 @@ interface Resource {
   url: string;
   sourceType: string;
   language: string;
+  branch: string;
   mathTopicId: number;
   mathTopicName: string | null;
 }
@@ -343,14 +344,14 @@ function ResourcesAdmin() {
   const { data: topics } = useQuery({ queryKey: ['mathTopics'], queryFn: () => apiFetch<MathTopic[]>('/api/MathTopics') });
   const { data: resources, isLoading } = useQuery({ queryKey: ['resources', 'admin'], queryFn: () => apiFetch<Resource[]>('/api/Resources') });
 
-  const [form, setForm] = useState({ title: '', url: '', sourceType: 'YouTube', language: 'English', mathTopicId: 0 });
+  const [form, setForm] = useState({ title: '', url: '', sourceType: 'YouTube', language: 'English', branch: 'Pure', mathTopicId: 0 });
   const [error, setError] = useState<string | null>(null);
 
   const createResource = useMutation({
     mutationFn: (dto: typeof form) => apiFetch<Resource>('/api/Resources', { method: 'POST', body: JSON.stringify(dto) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
-      setForm({ title: '', url: '', sourceType: 'YouTube', language: 'English', mathTopicId: 0 });
+      setForm({ title: '', url: '', sourceType: 'YouTube', language: 'English', branch: 'Pure', mathTopicId: 0 });
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Failed to add resource'),
   });
@@ -396,6 +397,13 @@ function ResourcesAdmin() {
             <option>Tamil</option>
           </select>
         </div>
+        <div className="field" style={{ width: 110 }}>
+          <label>Branch</label>
+          <select className="input" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })}>
+            <option>Pure</option>
+            <option>Applied</option>
+          </select>
+        </div>
         <div className="field" style={{ flex: '1 1 160px' }}>
           <label>Topic</label>
           <select className="input" value={form.mathTopicId} onChange={(e) => setForm({ ...form, mathTopicId: Number(e.target.value) })} required>
@@ -413,13 +421,14 @@ function ResourcesAdmin() {
 
       {resources && resources.length > 0 && (
         <table className="table">
-          <thead><tr><th>Title</th><th>Type</th><th>Language</th><th>Topic</th><th></th></tr></thead>
+          <thead><tr><th>Title</th><th>Type</th><th>Language</th><th>Branch</th><th>Topic</th><th></th></tr></thead>
           <tbody>
             {resources.map((r) => (
               <tr key={r.id}>
                 <td style={{ fontWeight: 500 }}>{r.title}</td>
                 <td>{r.sourceType}</td>
                 <td>{r.language}</td>
+                <td>{r.branch}</td>
                 <td>{r.mathTopicName}</td>
                 <td style={{ textAlign: 'right' }}>
                   <button className="btn btn-ghost" style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }} onClick={() => deleteResource.mutate(r.id)}>

@@ -7,6 +7,7 @@ public class ResourceDto
     public string Url { get; set; } = string.Empty;
     public string SourceType { get; set; } = string.Empty;
     public string Language { get; set; } = "English";
+    public string Branch { get; set; } = "Pure";
     public int MathTopicId { get; set; }
     public string? MathTopicName { get; set; }
 }

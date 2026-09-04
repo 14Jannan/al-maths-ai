@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
+using backend.Services;
 
 namespace backend.Controllers;
 
@@ -12,20 +13,24 @@ namespace backend.Controllers;
 public class ResourcesController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly CohereEmbeddingService _embeddingService;
 
-    public ResourcesController(AppDbContext context)
+    public ResourcesController(AppDbContext context, CohereEmbeddingService embeddingService)
     {
         _context = context;
+        _embeddingService = embeddingService;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int? topicId, [FromQuery] string? language)
+    public async Task<IActionResult> GetAll([FromQuery] int? topicId, [FromQuery] string? language, [FromQuery] string? branch)
     {
         var query = _context.Resources.Include(r => r.MathTopic).AsQueryable();
         if (topicId.HasValue)
             query = query.Where(r => r.MathTopicId == topicId.Value);
         if (!string.IsNullOrWhiteSpace(language))
             query = query.Where(r => r.Language == language);
+        if (!string.IsNullOrWhiteSpace(branch))
+            query = query.Where(r => r.Branch == branch);
 
         var resources = await query
             .Select(r => new ResourceDto
@@ -35,6 +40,7 @@ public class ResourcesController : ControllerBase
                 Url = r.Url,
                 SourceType = r.SourceType,
                 Language = r.Language,
+                Branch = r.Branch,
                 MathTopicId = r.MathTopicId,
                 MathTopicName = r.MathTopic!.Name
             })
@@ -53,8 +59,12 @@ public class ResourcesController : ControllerBase
             Url = dto.Url,
             SourceType = dto.SourceType,
             Language = dto.Language,
+            Branch = dto.Branch,
             MathTopicId = dto.MathTopicId
         };
+
+        var embedding = await _embeddingService.GetEmbeddingAsync(dto.Title, "search_document");
+        resource.Embedding = new Pgvector.Vector(embedding);
 
         _context.Resources.Add(resource);
         await _context.SaveChangesAsync();
@@ -70,11 +80,21 @@ public class ResourcesController : ControllerBase
         var resource = await _context.Resources.FindAsync(id);
         if (resource == null) return NotFound();
 
+        var titleChanged = resource.Title != dto.Title;
+
         resource.Title = dto.Title;
         resource.Url = dto.Url;
         resource.SourceType = dto.SourceType;
         resource.Language = dto.Language;
+        resource.Branch = dto.Branch;
         resource.MathTopicId = dto.MathTopicId;
+
+        if (titleChanged)
+        {
+            var embedding = await _embeddingService.GetEmbeddingAsync(dto.Title, "search_document");
+            resource.Embedding = new Pgvector.Vector(embedding);
+        }
+
         await _context.SaveChangesAsync();
         return NoContent();
     }

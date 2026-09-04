@@ -36,7 +36,15 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
-        var user = new IdentityUser { UserName = dto.Email, Email = dto.Email, EmailConfirmed = false };
+        if (string.IsNullOrWhiteSpace(dto.Username))
+        {
+            return BadRequest(new { error = "Username is required" });
+        }
+
+        // UserName carries the display name here — login looks users up by
+        // Email (FindByEmailAsync below), never by UserName, so this is
+        // safe to repurpose without touching authentication.
+        var user = new IdentityUser { UserName = dto.Username, Email = dto.Email, EmailConfirmed = false };
         var result = await _userManager.CreateAsync(user, dto.Password);
 
         if (!result.Succeeded)
@@ -102,7 +110,7 @@ public class AuthController : ControllerBase
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = _tokenService.CreateToken(user, roles);
-        return Ok(new AuthResponseDto { Token = token, Email = user.Email! });
+        return Ok(new AuthResponseDto { Token = token, Email = user.Email!, Username = user.UserName ?? user.Email! });
     }
 
     [HttpPost("resend-otp")]
@@ -215,6 +223,6 @@ public class AuthController : ControllerBase
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = _tokenService.CreateToken(user, roles, dto.RememberMe);
-        return Ok(new AuthResponseDto { Token = token, Email = user.Email! });
+        return Ok(new AuthResponseDto { Token = token, Email = user.Email!, Username = user.UserName ?? user.Email! });
     }
 }

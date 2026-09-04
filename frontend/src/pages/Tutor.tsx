@@ -5,15 +5,33 @@ import { apiFetch, ApiError } from '../lib/api';
 import { getConversation } from '../lib/conversations';
 import { RenderedMessage } from '../components/RenderedMessage';
 
+interface RelatedPastPaper {
+  id: number;
+  year: number;
+  paper: string;
+  questionNumber: string;
+}
+
+interface RelatedResource {
+  id: number;
+  title: string;
+  url: string;
+  sourceType: string;
+}
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'ai';
   text: string;
+  relatedPastPapers?: RelatedPastPaper[];
+  relatedResources?: RelatedResource[];
 }
 
 interface ChatResponseDto {
   reply: string;
   conversationId: number;
+  relatedPastPapers: RelatedPastPaper[];
+  relatedResources: RelatedResource[];
 }
 
 export function Tutor() {
@@ -71,7 +89,16 @@ export function Tutor() {
         method: 'POST',
         body: JSON.stringify({ message: text, conversationId }),
       });
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'ai', text: result.reply }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'ai',
+          text: result.reply,
+          relatedPastPapers: result.relatedPastPapers,
+          relatedResources: result.relatedResources,
+        },
+      ]);
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['chatUsage'] });
 
@@ -221,6 +248,46 @@ export function Tutor() {
                   iMath tutor
                 </div>
                 <div style={{ fontSize: 15, lineHeight: 1.75 }}><RenderedMessage text={m.text} /></div>
+
+                {((m.relatedResources && m.relatedResources.length > 0) || (m.relatedPastPapers && m.relatedPastPapers.length > 0)) && (
+                  <div style={{ borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    {m.relatedResources && m.relatedResources.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 6 }}>
+                          Related resource{m.relatedResources.length > 1 ? 's' : ''}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {m.relatedResources.map((r) => (
+                            <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <span className="tag tag-outline" style={{ fontSize: 10.5, padding: '1px 7px' }}>{r.sourceType}</span>
+                              {r.title}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {m.relatedPastPapers && m.relatedPastPapers.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 6 }}>
+                          Related past paper question{m.relatedPastPapers.length > 1 ? 's' : ''}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {m.relatedPastPapers.map((p) => (
+                            <button
+                              key={p.id}
+                              className="tag tag-neutral"
+                              style={{ border: 'none', cursor: 'pointer' }}
+                              onClick={() => navigate('/papers')}
+                              title="View in past papers"
+                            >
+                              {p.year} · {p.paper} · Q{p.questionNumber}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )
           )}
