@@ -110,7 +110,7 @@ export function Layout() {
         </div>
       )}
 
-      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      <div className="app-content" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <Outlet />
       </div>
     </div>
