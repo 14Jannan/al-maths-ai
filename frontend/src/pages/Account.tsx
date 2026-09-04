@@ -7,7 +7,7 @@ export function Account() {
 
   function handleLogout() {
     logout();
-    navigate('/login');
+    navigate('/');
   }
 
   return (
