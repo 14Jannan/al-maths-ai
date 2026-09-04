@@ -117,6 +117,25 @@ using (var scope = app.Services.CreateScope())
         db.SyllabusEntries.AddRange(entries);
         await db.SaveChangesAsync();
     }
+
+    // Seed the 20 official MathTopics (upsert by name, not "only if empty")
+    // — a handful of topics may already exist from earlier manual admin
+    // entries, and those rows are referenced by real PastPapers/Resources
+    // via MathTopicId, so they must keep their existing Id. Matching ones
+    // just get their description refreshed; new ones are inserted.
+    var existingTopics = await db.MathTopics.ToDictionaryAsync(t => t.Name, t => t);
+    foreach (var topic in backend.Data.MathTopicSeedData.GetTopics())
+    {
+        if (existingTopics.TryGetValue(topic.Name, out var existing))
+        {
+            existing.Description = topic.Description;
+        }
+        else
+        {
+            db.MathTopics.Add(topic);
+        }
+    }
+    await db.SaveChangesAsync();
 }
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

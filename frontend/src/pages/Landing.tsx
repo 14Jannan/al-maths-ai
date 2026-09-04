@@ -151,7 +151,7 @@ export function Landing() {
         >
           {[
             { value: '6 years', label: 'of past papers, question by question' },
-            { value: '18 topics', label: 'mapped to the official syllabus sections' },
+            { value: '20 topics', label: 'mapped to the official syllabus sections' },
             { value: '2 languages', label: 'explanations in English and Tamil' },
             { value: '0 detours', label: 'anything outside the syllabus is labelled' },
           ].map((stat) => (
