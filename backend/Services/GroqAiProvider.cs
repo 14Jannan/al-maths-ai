@@ -85,6 +85,49 @@ Earlier messages in this conversation are provided for context. Refer back to th
 
                 return reply ?? string.Empty;
     }
+        public async Task<string> ExtractTextFromImageAsync(string imageUrl)
+    {
+        var apiKey = _configuration["Groq:ApiKey"];
+        var visionModel = "qwen/qwen3.8-27b";
+
+        var requestBody = new
+        {
+            model = visionModel,
+            messages = new object[]
+            {
+                new
+                {
+                    role = "system",
+                    content = "You transcribe mathematics exam questions from photos. Read the image carefully and output ONLY the exact question text as written, preserving all mathematical notation using LaTeX delimited by \\( ... \\) for inline math or \\[ ... \\] for display math. If there are multiple sub-questions (a), (b), (c) etc., transcribe all of them in order. Do NOT solve the question, do NOT add any explanation, do NOT add commentary \u2014 output only the transcribed question text."
+                },
+                new
+                {
+                    role = "user",
+                    content = new object[]
+                    {
+                        new { type = "text", text = "Transcribe the question(s) in this image." },
+                        new { type = "image_url", image_url = new { url = imageUrl } }
+                    }
+                }
+            }
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
+        request.Headers.Add("Authorization", $"Bearer {apiKey}");
+        request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.SendAsync(request);
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception($"Groq vision API error ({response.StatusCode}): {responseBody}");
+        }
+
+        using var doc = JsonDocument.Parse(responseBody);
+        var text = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+        return text ?? string.Empty;
+    }
 
     public async Task<string> GetVisionCompletionAsync(string imageUrl, string userMessage)
     {
