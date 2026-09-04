@@ -33,5 +33,8 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<DocumentChunk>()
             .Property(e => e.Embedding)
             .HasColumnType("vector(1024)");
+        modelBuilder.Entity<PastPaper>()
+            .Property(e => e.Embedding)
+            .HasColumnType("vector(1024)");
     }
 }
