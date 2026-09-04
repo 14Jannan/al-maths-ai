@@ -5,6 +5,7 @@ using backend.Data;
 using backend.DTOs;
 using backend.Models;
 using backend.Services;
+using Pgvector.EntityFrameworkCore;
 
 namespace backend.Controllers;
 
@@ -21,12 +22,15 @@ public class ChatController : ControllerBase
 
     private readonly SyllabusRetrievalService _syllabusService;
 
-    public ChatController(IAiProvider aiProvider, AppDbContext context, SupabaseStorageService storageService, SyllabusRetrievalService syllabusService)
+    private readonly CohereEmbeddingService _embeddingService;
+
+    public ChatController(IAiProvider aiProvider, AppDbContext context, SupabaseStorageService storageService, SyllabusRetrievalService syllabusService, CohereEmbeddingService embeddingService)
     {
         _aiProvider = aiProvider;
         _context = context;
         _storageService = storageService;
         _syllabusService = syllabusService;
+        _embeddingService = embeddingService;
     }
 
     private string CurrentUserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
@@ -116,22 +120,34 @@ public class ChatController : ControllerBase
                 }
                 usage.Count += 1;
             }
-                        // Suggest real, existing past paper questions related to this
-            // question's keywords — never AI-generated, so these links are
-            // always accurate and never hallucinated question numbers.
-            var keywords = dto.Message.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .Where(w => w.Length > 3)
-                .Take(3);
-
-            var relatedQuery = _context.PastPapers.AsQueryable();
-            foreach (var word in keywords)
+            // Suggest real, existing past paper questions related to this
+            // question — never AI-generated, so these links are always
+            // accurate and never hallucinated question numbers. A failure
+            // here (e.g. the embedding API is briefly down) shouldn't sink
+            // an otherwise-successful reply, so it's isolated in its own
+            // try/catch rather than sharing the outer one.
+            var relatedPapers = new List<RelatedPastPaperDto>();
+            try
             {
-                relatedQuery = relatedQuery.Where(p => EF.Functions.ILike(p.QuestionText, $"%{word}%"));
+                // Semantic search for related past paper questions — embeddings
+                // catch related meaning even when the exact words differ
+                // (e.g. "rate of change" question still matches a
+                // "differentiation" past paper question).
+                var questionEmbedding = await _embeddingService.GetEmbeddingAsync(dto.Message, "search_query");
+                var questionVector = new Pgvector.Vector(questionEmbedding);
+
+                relatedPapers = await _context.PastPapers
+                    .Where(p => p.Embedding != null)
+                    .OrderBy(p => p.Embedding!.CosineDistance(questionVector))
+                    .Take(3)
+                    .Select(p => new RelatedPastPaperDto { Id = p.Id, Year = p.Year, Paper = p.Paper, QuestionNumber = p.QuestionNumber })
+                    .ToListAsync();
             }
-            var relatedPapers = await relatedQuery
-                .Take(3)
-                .Select(p => new RelatedPastPaperDto { Id = p.Id, Year = p.Year, Paper = p.Paper, QuestionNumber = p.QuestionNumber })
-                .ToListAsync();
+            catch
+            {
+                // Related-papers is a bonus, not the point of the response —
+                // fall through with an empty list rather than failing the chat.
+            }
 
             await _context.SaveChangesAsync();
 
