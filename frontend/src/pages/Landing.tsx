@@ -25,7 +25,7 @@ export function Landing() {
         style={{
           maxWidth: 1180,
           margin: '0 auto',
-          padding: 'clamp(36px,7vw,90px) clamp(18px,4vw,40px) clamp(28px,5vw,56px)',
+          padding: 'clamp(20px,4vw,48px) clamp(18px,4vw,40px) clamp(28px,5vw,56px)',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
           gap: 'clamp(24px,5vw,56px)',
@@ -91,14 +91,21 @@ export function Landing() {
           </div>
           <div
             style={{
-              width: '100%',
-              border: '1px solid var(--color-divider)',
+              background: 'color-mix(in srgb, var(--color-neutral-900) 70%, var(--color-surface))',
+              boxShadow: 'var(--shadow-sm)',
               borderRadius: 'var(--radius-md)',
-              padding: '12px 15px',
-              fontSize: 15,
+              padding: 'var(--space-4)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-3)',
             }}
           >
-            Differentiate <Math tex="x^{2}\sin x" /> with respect to <Math tex="x" />.
+            <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>
+              Question
+            </div>
+            <div style={{ fontSize: 15, lineHeight: 1.5 }}>
+              Differentiate <Math tex="x^{2}\sin x" /> with respect to <Math tex="x" />.
+            </div>
           </div>
           <div
             style={{

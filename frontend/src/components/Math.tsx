@@ -11,8 +11,13 @@ interface MathProps {
 
 // Renders a LaTeX formula. Use display={true} for a standalone formula block
 // (like the design's data-display="1"), or leave it false for inline math.
+//
+// The wrapper element must be inline (span) for display=false — a block
+// element (div) forces a line break before/after every formula, which
+// breaks up a sentence like "Differentiate <Math/> with respect to <Math/>."
+// into one fragment per line instead of flowing as normal text.
 export function Math({ tex, display = false, style, className }: MathProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLSpanElement & HTMLDivElement>(null);
 
   useEffect(() => {
     if (ref.current) {
@@ -23,5 +28,8 @@ export function Math({ tex, display = false, style, className }: MathProps) {
     }
   }, [tex, display]);
 
-  return <div ref={ref} style={style} className={className} />;
+  if (display) {
+    return <div ref={ref} style={style} className={className} />;
+  }
+  return <span ref={ref} style={style} className={className} />;
 }
