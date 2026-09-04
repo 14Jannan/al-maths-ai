@@ -139,12 +139,14 @@ export function Landing() {
         </div>
       </section>
 
-      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '0 clamp(18px,4vw,40px) clamp(20px,4vw,40px)' }}>
+      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '0 clamp(18px,4vw,40px) clamp(28px,5vw,56px)' }}>
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))',
-            gap: 'var(--space-4)',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 'var(--space-5) var(--space-8)',
+            borderTop: '1px solid var(--color-divider)',
+            paddingTop: 'var(--space-6)',
           }}
         >
           {[
@@ -153,9 +155,21 @@ export function Landing() {
             { value: '2 languages', label: 'explanations in English and Tamil' },
             { value: '0 detours', label: 'anything outside the syllabus is labelled' },
           ].map((stat) => (
-            <div key={stat.value} className="card elev-sm" style={{ padding: 'var(--space-5) var(--space-4)', gap: 4 }}>
-              <div style={{ fontSize: 'clamp(24px,2.6vw,30px)', fontFamily: 'var(--font-heading)', color: 'var(--color-accent)' }}>{stat.value}</div>
-              <div style={{ fontSize: 13, color: 'color-mix(in srgb, var(--color-text) 68%, transparent)' }}>{stat.label}</div>
+            <div key={stat.value} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flex: '1 1 220px', minWidth: 200 }}>
+              <span
+                style={{
+                  flexShrink: 0,
+                  width: 7,
+                  height: 7,
+                  marginTop: 6,
+                  background: 'var(--color-accent)',
+                  transform: 'rotate(45deg)',
+                }}
+              />
+              <div>
+                <span style={{ fontFamily: 'var(--font-heading)', fontSize: 16, color: 'var(--color-text)' }}>{stat.value}</span>{' '}
+                <span style={{ fontSize: 14, color: 'color-mix(in srgb, var(--color-text) 68%, transparent)' }}>{stat.label}</span>
+              </div>
             </div>
           ))}
         </div>
