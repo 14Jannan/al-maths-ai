@@ -27,11 +27,12 @@ interface Resource {
   title: string;
   url: string;
   sourceType: string;
+  language: string;
   mathTopicId: number;
   mathTopicName: string | null;
 }
 
-type Tab = 'topics' | 'papers' | 'resources' | 'documents';
+type Tab = 'topics' | 'papers' | 'resources' | 'documents' | 'exampapers';
 
 export function Admin() {
   const [tab, setTab] = useState<Tab>('topics');
@@ -44,7 +45,7 @@ export function Admin() {
       </p>
 
       <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-8)', borderBottom: '1px solid var(--color-divider)' }}>
-        {(['topics', 'papers', 'resources', 'documents'] as Tab[]).map((t) => (
+        {(['topics', 'papers', 'resources', 'documents', 'exampapers'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -65,6 +66,7 @@ export function Admin() {
       {tab === 'papers' && <PapersAdmin />}
       {tab === 'resources' && <ResourcesAdmin />}
       {tab === 'documents' && <DocumentsAdmin />}
+      {tab === 'exampapers' && <ExamPapersAdmin />}
     </main>
   );
 }
@@ -282,14 +284,14 @@ function ResourcesAdmin() {
   const { data: topics } = useQuery({ queryKey: ['mathTopics'], queryFn: () => apiFetch<MathTopic[]>('/api/MathTopics') });
   const { data: resources, isLoading } = useQuery({ queryKey: ['resources', 'admin'], queryFn: () => apiFetch<Resource[]>('/api/Resources') });
 
-  const [form, setForm] = useState({ title: '', url: '', sourceType: 'YouTube', mathTopicId: 0 });
+  const [form, setForm] = useState({ title: '', url: '', sourceType: 'YouTube', language: 'English', mathTopicId: 0 });
   const [error, setError] = useState<string | null>(null);
 
   const createResource = useMutation({
     mutationFn: (dto: typeof form) => apiFetch<Resource>('/api/Resources', { method: 'POST', body: JSON.stringify(dto) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
-      setForm({ title: '', url: '', sourceType: 'YouTube', mathTopicId: 0 });
+      setForm({ title: '', url: '', sourceType: 'YouTube', language: 'English', mathTopicId: 0 });
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Failed to add resource'),
   });
@@ -328,6 +330,13 @@ function ResourcesAdmin() {
             <option>Notes</option>
           </select>
         </div>
+        <div className="field" style={{ width: 110 }}>
+          <label>Language</label>
+          <select className="input" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+            <option>English</option>
+            <option>Tamil</option>
+          </select>
+        </div>
         <div className="field" style={{ flex: '1 1 160px' }}>
           <label>Topic</label>
           <select className="input" value={form.mathTopicId} onChange={(e) => setForm({ ...form, mathTopicId: Number(e.target.value) })} required>
@@ -345,12 +354,13 @@ function ResourcesAdmin() {
 
       {resources && resources.length > 0 && (
         <table className="table">
-          <thead><tr><th>Title</th><th>Type</th><th>Topic</th><th></th></tr></thead>
+          <thead><tr><th>Title</th><th>Type</th><th>Language</th><th>Topic</th><th></th></tr></thead>
           <tbody>
             {resources.map((r) => (
               <tr key={r.id}>
                 <td style={{ fontWeight: 500 }}>{r.title}</td>
                 <td>{r.sourceType}</td>
+                <td>{r.language}</td>
                 <td>{r.mathTopicName}</td>
                 <td style={{ textAlign: 'right' }}>
                   <button className="btn btn-ghost" style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }} onClick={() => deleteResource.mutate(r.id)}>
@@ -437,6 +447,159 @@ function DocumentsAdmin() {
                   <button className="btn btn-ghost" style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }} onClick={() => deleteDoc.mutate(d.sourceTitle)}>
                     Delete
                   </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+// ───────────────────────── Exam Papers ─────────────────────────
+
+interface ExamPaperDocument {
+  id: number;
+  year: number;
+  paper: string;
+  medium: string;
+  questionPaperUrl: string;
+  markingSchemeUrl: string | null;
+  sourceLabel: string;
+}
+
+function ExamPapersAdmin() {
+  const queryClient = useQueryClient();
+  const [bulkJson, setBulkJson] = useState('');
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
+
+  const [form, setForm] = useState({ year: new Date().getFullYear(), paper: 'Combined', medium: 'English', questionPaperUrl: '', markingSchemeUrl: '', sourceLabel: '' });
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const { data: papers, isLoading } = useQuery({
+    queryKey: ['examPapers', 'admin'],
+    queryFn: () => apiFetch<ExamPaperDocument[]>('/api/ExamPapers'),
+  });
+
+  const saveOne = useMutation({
+    mutationFn: async (payload: typeof form & { id?: number }) => {
+      if (payload.id) {
+        await apiFetch<void>(`/api/ExamPapers/${payload.id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      } else {
+        await apiFetch<ExamPaperDocument>('/api/ExamPapers', { method: 'POST', body: JSON.stringify(payload) });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['examPapers'] });
+      setForm({ year: new Date().getFullYear(), paper: 'Combined', medium: 'English', questionPaperUrl: '', markingSchemeUrl: '', sourceLabel: '' });
+      setEditingId(null);
+    },
+  });
+
+  const bulkImport = useMutation({
+    mutationFn: (items: unknown[]) => apiFetch<{ added: number }>('/api/ExamPapers/bulk', { method: 'POST', body: JSON.stringify({ items }) }),
+    onSuccess: (res) => {
+      setBulkResult(`${res.added} entries imported.`);
+      setBulkJson('');
+      queryClient.invalidateQueries({ queryKey: ['examPapers'] });
+    },
+    onError: (err) => setBulkError(err instanceof ApiError ? err.message : 'Import failed'),
+  });
+
+  const deleteOne = useMutation({
+    mutationFn: (id: number) => apiFetch<void>(`/api/ExamPapers/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['examPapers'] }),
+  });
+
+  function handleBulkSubmit() {
+    setBulkError(null);
+    setBulkResult(null);
+    try {
+      const parsed = JSON.parse(bulkJson);
+      if (!Array.isArray(parsed)) throw new Error('Must be a JSON array');
+      bulkImport.mutate(parsed);
+    } catch (e) {
+      setBulkError(e instanceof Error ? e.message : 'Invalid JSON');
+    }
+  }
+
+  function startEdit(p: ExamPaperDocument) {
+    setEditingId(p.id);
+    setForm({ year: p.year, paper: p.paper, medium: p.medium, questionPaperUrl: p.questionPaperUrl, markingSchemeUrl: p.markingSchemeUrl ?? '', sourceLabel: p.sourceLabel });
+  }
+
+  return (
+    <div>
+      {/* Bulk import — paste a JSON array here (e.g. from a compiled research list) */}
+      <div style={{ marginBottom: 'var(--space-8)' }}>
+        <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 6 }}>Bulk import (JSON array)</label>
+        <textarea
+          className="input"
+          style={{ minHeight: 120, fontFamily: 'monospace', fontSize: 12.5 }}
+          value={bulkJson}
+          onChange={(e) => setBulkJson(e.target.value)}
+          placeholder='[{"year":2024,"paper":"Combined","medium":"English","questionPaperUrl":"https://...","markingSchemeUrl":"https://...","sourceLabel":"Past Papers WiKi"}]'
+        />
+        <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginTop: 8 }}>
+          <button className="btn btn-primary" onClick={handleBulkSubmit} disabled={!bulkJson.trim() || bulkImport.isPending}>
+            {bulkImport.isPending ? 'Importing…' : 'Import all'}
+          </button>
+          {bulkError && <span style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }}>{bulkError}</span>}
+          {bulkResult && <span style={{ fontSize: 12.5, color: 'var(--color-accent)' }}>{bulkResult}</span>}
+        </div>
+      </div>
+
+      {/* Single add / edit form */}
+      <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 'var(--space-8)' }}>
+        <div className="field" style={{ width: 90 }}>
+          <label>Year</label>
+          <input className="input" type="number" value={form.year} onChange={(e) => setForm({ ...form, year: Number(e.target.value) })} />
+        </div>
+        <div className="field" style={{ width: 110 }}>
+          <label>Medium</label>
+          <select className="input" value={form.medium} onChange={(e) => setForm({ ...form, medium: e.target.value })}>
+            <option>English</option>
+            <option>Tamil</option>
+          </select>
+        </div>
+        <div className="field" style={{ flex: '1 1 220px' }}>
+          <label>Question paper URL</label>
+          <input className="input" value={form.questionPaperUrl} onChange={(e) => setForm({ ...form, questionPaperUrl: e.target.value })} />
+        </div>
+        <div className="field" style={{ flex: '1 1 220px' }}>
+          <label>Marking scheme URL (optional)</label>
+          <input className="input" value={form.markingSchemeUrl} onChange={(e) => setForm({ ...form, markingSchemeUrl: e.target.value })} />
+        </div>
+        <div className="field" style={{ width: 130 }}>
+          <label>Source</label>
+          <input className="input" value={form.sourceLabel} onChange={(e) => setForm({ ...form, sourceLabel: e.target.value })} placeholder="Past Papers WiKi" />
+        </div>
+        <button className="btn btn-primary" onClick={() => saveOne.mutate({ ...form, id: editingId ?? undefined })} disabled={saveOne.isPending}>
+          {editingId ? 'Save changes' : 'Add'}
+        </button>
+        {editingId && (
+          <button className="btn btn-ghost" onClick={() => { setEditingId(null); setForm({ year: new Date().getFullYear(), paper: 'Combined', medium: 'English', questionPaperUrl: '', markingSchemeUrl: '', sourceLabel: '' }); }}>
+            Cancel
+          </button>
+        )}
+      </div>
+
+      {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>}
+      {papers && papers.length > 0 && (
+        <table className="table">
+          <thead><tr><th>Year</th><th>Medium</th><th>Scheme?</th><th>Source</th><th></th></tr></thead>
+          <tbody>
+            {papers.map((p) => (
+              <tr key={p.id}>
+                <td>{p.year}</td>
+                <td>{p.medium}</td>
+                <td>{p.markingSchemeUrl ? '✓' : '—'}</td>
+                <td>{p.sourceLabel}</td>
+                <td style={{ textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button className="btn btn-ghost" style={{ fontSize: 12.5 }} onClick={() => startEdit(p)}>Edit</button>
+                  <button className="btn btn-ghost" style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }} onClick={() => deleteOne.mutate(p.id)}>Delete</button>
                 </td>
               </tr>
             ))}
