@@ -69,6 +69,23 @@ public class ExamPapersController : ControllerBase
         return Ok(new { added = entities.Count });
     }
 
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Update(int id, ExamPaperDocumentDto dto)
+    {
+        var entity = await _context.ExamPaperDocuments.FindAsync(id);
+        if (entity == null) return NotFound();
+
+        entity.Year = dto.Year;
+        entity.Paper = dto.Paper;
+        entity.Medium = dto.Medium;
+        entity.QuestionPaperUrl = dto.QuestionPaperUrl;
+        entity.MarkingSchemeUrl = dto.MarkingSchemeUrl;
+        entity.SourceLabel = dto.SourceLabel;
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)

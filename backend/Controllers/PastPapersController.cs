@@ -101,6 +101,26 @@ public class PastPapersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = paper.Id }, dto);
     }
 
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Update(int id, PastPaperDto dto)
+    {
+        var paper = await _context.PastPapers.FindAsync(id);
+        if (paper == null) return NotFound();
+
+        paper.Year = dto.Year;
+        paper.Paper = dto.Paper;
+        paper.QuestionNumber = dto.QuestionNumber;
+        paper.QuestionText = dto.QuestionText;
+        paper.Answer = dto.Answer;
+        paper.Explanation = dto.Explanation;
+        paper.Difficulty = dto.Difficulty;
+        paper.Language = dto.Language;
+        paper.MathTopicId = dto.MathTopicId;
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
