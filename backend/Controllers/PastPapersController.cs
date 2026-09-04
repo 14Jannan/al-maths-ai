@@ -13,13 +13,21 @@ namespace backend.Controllers;
 [Route("api/[controller]")]
 public class PastPapersController : ControllerBase
 {
-    private readonly AppDbContext _context;
+        private readonly AppDbContext _context;
     private readonly CohereEmbeddingService _embeddingService;
+    private readonly SupabaseStorageService _storageService;
+    private readonly IAiProvider _aiProvider;
 
-    public PastPapersController(AppDbContext context, CohereEmbeddingService embeddingService)
+    public PastPapersController(
+        AppDbContext context,
+        CohereEmbeddingService embeddingService,
+        SupabaseStorageService storageService,
+        IAiProvider aiProvider)
     {
         _context = context;
         _embeddingService = embeddingService;
+        _storageService = storageService;
+        _aiProvider = aiProvider;
     }
 
     [HttpGet]
@@ -130,6 +138,46 @@ public class PastPapersController : ControllerBase
         _context.PastPapers.Remove(paper);
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+        [HttpPost("extract-from-image")]
+    [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(10_000_000)]
+    public async Task<IActionResult> ExtractFromImage([FromForm] IFormFile image)
+    {
+        if (image == null || image.Length == 0)
+        {
+            return BadRequest("No image uploaded");
+        }
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+        if (!allowedTypes.Contains(image.ContentType))
+        {
+            return BadRequest("Only JPEG, PNG, or WebP images are allowed");
+        }
+
+        string imageUrl;
+        try
+        {
+            var extension = Path.GetExtension(image.FileName);
+            if (string.IsNullOrWhiteSpace(extension)) extension = ".jpg";
+            using var stream = image.OpenReadStream();
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
+            imageUrl = await _storageService.UploadQuestionImageAsync(userId, stream, image.ContentType, extension);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(502, new { error = "Image upload failed", details = ex.Message });
+        }
+
+        try
+        {
+            var extractedText = await _aiProvider.ExtractTextFromImageAsync(imageUrl);
+            return Ok(new { extractedText, imageUrl });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(502, new { error = "Text extraction failed", details = ex.Message });
+        }
     }
 
     // Used internally by ChatController for semantic "related questions"
