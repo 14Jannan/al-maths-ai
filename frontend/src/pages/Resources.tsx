@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api';
 
@@ -6,13 +7,16 @@ interface Resource {
   title: string;
   url: string;
   sourceType: string;
+  language: string;
   mathTopicName: string | null;
 }
 
 export function Resources() {
+  const [language, setLanguage] = useState<'English' | 'Tamil'>('English');
+
   const { data: resources, isLoading } = useQuery({
-    queryKey: ['resources'],
-    queryFn: () => apiFetch<Resource[]>('/api/Resources'),
+    queryKey: ['resources', language],
+    queryFn: () => apiFetch<Resource[]>(`/api/Resources?language=${language}`),
   });
 
   return (
@@ -22,11 +26,28 @@ export function Resources() {
         Curated videos and notes, picked by your teacher/admin — not AI-generated.
       </p>
 
+      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-6)', borderBottom: '1px solid var(--color-divider)' }}>
+        {(['English', 'Tamil'] as const).map((lang) => (
+          <button
+            key={lang}
+            onClick={() => setLanguage(lang)}
+            className="btn btn-ghost"
+            style={{
+              borderRadius: 0,
+              borderBottom: language === lang ? '2px solid var(--color-accent)' : '2px solid transparent',
+              color: language === lang ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 55%, transparent)',
+            }}
+          >
+            {lang}
+          </button>
+        ))}
+      </div>
+
       {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>}
 
       {resources && resources.length === 0 && (
         <div style={{ border: '1px dashed color-mix(in srgb, var(--color-text) 22%, transparent)', borderRadius: 'var(--radius-md)', padding: 'clamp(28px,5vw,52px)', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 18, marginBottom: 6 }}>No resources yet</div>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 18, marginBottom: 6 }}>No {language} resources yet</div>
         </div>
       )}
 
