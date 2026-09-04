@@ -19,11 +19,13 @@ public class ResourcesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int? topicId)
+    public async Task<IActionResult> GetAll([FromQuery] int? topicId, [FromQuery] string? language)
     {
         var query = _context.Resources.Include(r => r.MathTopic).AsQueryable();
         if (topicId.HasValue)
             query = query.Where(r => r.MathTopicId == topicId.Value);
+        if (!string.IsNullOrWhiteSpace(language))
+            query = query.Where(r => r.Language == language);
 
         var resources = await query
             .Select(r => new ResourceDto
@@ -32,6 +34,7 @@ public class ResourcesController : ControllerBase
                 Title = r.Title,
                 Url = r.Url,
                 SourceType = r.SourceType,
+                Language = r.Language,
                 MathTopicId = r.MathTopicId,
                 MathTopicName = r.MathTopic!.Name
             })
@@ -49,6 +52,7 @@ public class ResourcesController : ControllerBase
             Title = dto.Title,
             Url = dto.Url,
             SourceType = dto.SourceType,
+            Language = dto.Language,
             MathTopicId = dto.MathTopicId
         };
 
@@ -57,6 +61,22 @@ public class ResourcesController : ControllerBase
 
         dto.Id = resource.Id;
         return CreatedAtAction(nameof(GetAll), new { id = resource.Id }, dto);
+    }
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Update(int id, ResourceDto dto)
+    {
+        var resource = await _context.Resources.FindAsync(id);
+        if (resource == null) return NotFound();
+
+        resource.Title = dto.Title;
+        resource.Url = dto.Url;
+        resource.SourceType = dto.SourceType;
+        resource.Language = dto.Language;
+        resource.MathTopicId = dto.MathTopicId;
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
     [HttpDelete("{id}")]
