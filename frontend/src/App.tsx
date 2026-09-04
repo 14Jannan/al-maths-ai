@@ -16,6 +16,7 @@ import { Pricing } from './pages/Pricing';
 import { Account } from './pages/Account';
 import { Papers } from './pages/Papers';
 import { Resources } from './pages/Resources';
+import { Settings } from './pages/Settings';
 
 function App() {
   return (
@@ -74,6 +75,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Account />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           }
         />

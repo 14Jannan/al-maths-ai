@@ -6,6 +6,7 @@ interface MathTopic {
   id: number;
   name: string;
   description: string;
+  branch: string;
 }
 
 interface PastPaper {
@@ -89,6 +90,7 @@ function TopicsAdmin() {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [branch, setBranch] = useState('Pure');
   const [error, setError] = useState<string | null>(null);
 
   const { data: topics, isLoading } = useQuery({
@@ -97,7 +99,7 @@ function TopicsAdmin() {
   });
 
   const createTopic = useMutation({
-    mutationFn: (newTopic: { name: string; description: string }) =>
+    mutationFn: (newTopic: { name: string; description: string; branch: string }) =>
       apiFetch<MathTopic>('/api/MathTopics', { method: 'POST', body: JSON.stringify(newTopic) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mathTopics'] });
@@ -115,7 +117,7 @@ function TopicsAdmin() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    createTopic.mutate({ name, description });
+    createTopic.mutate({ name, description, branch });
   }
 
   return (
@@ -129,6 +131,13 @@ function TopicsAdmin() {
           <label>Description</label>
           <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Rates of change..." required />
         </div>
+        <div className="field" style={{ width: 110 }}>
+          <label>Branch</label>
+          <select className="input" value={branch} onChange={(e) => setBranch(e.target.value)}>
+            <option>Pure</option>
+            <option>Applied</option>
+          </select>
+        </div>
         <button className="btn btn-primary" type="submit" disabled={createTopic.isPending}>
           {createTopic.isPending ? 'Adding…' : 'Add topic'}
         </button>
@@ -139,11 +148,12 @@ function TopicsAdmin() {
 
       {topics && topics.length > 0 && (
         <table className="table">
-          <thead><tr><th>Name</th><th>Description</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Branch</th><th>Description</th><th></th></tr></thead>
           <tbody>
             {topics.map((t) => (
               <tr key={t.id}>
                 <td style={{ fontWeight: 500 }}>{t.name}</td>
+                <td>{t.branch}</td>
                 <td style={{ color: 'color-mix(in srgb, var(--color-text) 62%, transparent)' }}>{t.description}</td>
                 <td style={{ textAlign: 'right' }}>
                   <button className="btn btn-ghost" style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }} onClick={() => deleteTopic.mutate(t.id)}>

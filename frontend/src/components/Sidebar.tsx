@@ -11,6 +11,7 @@ const navItems = [
   { to: '/topics', label: 'Topics' },
   { to: '/papers', label: 'Past Papers' },
   { to: '/resources', label: 'Resources' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 function groupConversations(conversations: ConversationSummary[]) {
@@ -89,7 +90,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   function handleLogout() {
     logout();
-    navigate('/login');
+    navigate('/');
   }
 
   return (
@@ -344,7 +345,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div style={{ borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-3)', marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: 0 }}>
         {!isPremium && (
           <button
-            className="btn btn-primary"
+            className="btn btn-success"
             style={{ fontSize: 12.5, padding: '6px 10px' }}
             onClick={() => {
               navigate('/pricing');
@@ -385,7 +386,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </span>
         </button>
 
-        <button className="btn btn-ghost" style={{ fontSize: 12, color: 'var(--color-neutral-300)' }} onClick={handleLogout}>
+        <button className="btn btn-danger" style={{ fontSize: 12 }} onClick={handleLogout}>
           Log out
         </button>
       </div>

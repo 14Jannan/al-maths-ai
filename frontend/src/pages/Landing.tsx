@@ -106,7 +106,7 @@ export function Landing() {
           </div>
           <div
             style={{
-              background: 'color-mix(in srgb, var(--color-neutral-900) 70%, var(--color-surface))',
+              background: 'var(--color-inset)',
               boxShadow: 'var(--shadow-sm)',
               borderRadius: 'var(--radius-md)',
               padding: 'var(--space-4)',
@@ -124,7 +124,7 @@ export function Landing() {
           </div>
           <div
             style={{
-              background: 'color-mix(in srgb, var(--color-neutral-900) 70%, var(--color-surface))',
+              background: 'var(--color-inset)',
               boxShadow: 'var(--shadow-sm)',
               borderRadius: 'var(--radius-md)',
               padding: 'var(--space-4)',

@@ -129,6 +129,7 @@ using (var scope = app.Services.CreateScope())
         if (existingTopics.TryGetValue(topic.Name, out var existing))
         {
             existing.Description = topic.Description;
+            existing.Branch = topic.Branch;
         }
         else
         {
