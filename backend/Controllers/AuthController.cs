@@ -128,6 +128,71 @@ public class AuthController : ControllerBase
         return Ok(new { message = "A new code was sent." });
     }
 
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+
+        // Don't reveal whether an account exists for this email — same
+        // non-committal response either way.
+        if (user != null)
+        {
+            var code = GenerateOtpCode();
+            _context.EmailOtps.Add(new backend.Models.EmailOtp
+            {
+                UserId = user.Id,
+                Code = code,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(5)
+            });
+            await _context.SaveChangesAsync();
+
+            await _emailService.SendPasswordResetOtpEmailAsync(dto.Email, code);
+        }
+
+        return Ok(new { message = "If an account exists for this email, a reset code was sent." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user == null)
+        {
+            return BadRequest(new { error = "Invalid or expired code" });
+        }
+
+        var otp = await _context.EmailOtps
+            .Where(o => o.UserId == user.Id)
+            .OrderByDescending(o => o.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (otp == null || otp.Code != dto.Code)
+        {
+            return BadRequest(new { error = "Invalid or expired code" });
+        }
+        if (otp.ExpiresAt < DateTime.UtcNow)
+        {
+            return BadRequest(new { error = "This code has expired. Request a new one." });
+        }
+
+        // The OTP already proved email ownership — generate and immediately
+        // consume Identity's own reset token server-side rather than asking
+        // the user to juggle a second, redundant credential.
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, resetToken, dto.NewPassword);
+        if (!result.Succeeded)
+        {
+            var message = string.Join(" ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { error = message });
+        }
+
+        var allOtps = await _context.EmailOtps.Where(o => o.UserId == user.Id).ToListAsync();
+        _context.EmailOtps.RemoveRange(allOtps);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Password reset. You can now log in." });
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {

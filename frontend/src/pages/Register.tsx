@@ -55,7 +55,7 @@ export function Register() {
       <div style={{ width: 'min(400px,100%)' }}>
         <h2 style={{ marginBottom: 'var(--space-2)' }}>Create your account</h2>
         <p style={{ fontSize: 14, color: 'color-mix(in srgb, var(--color-text) 65%, transparent)', marginBottom: 'var(--space-8)' }}>
-          Start free \u2014 10 questions a day.
+          Start free — 10 questions a day.
         </p>
         <form style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }} onSubmit={handleSubmit}>
           <div className="field">
@@ -114,7 +114,7 @@ export function Register() {
               required
             />
             {!passwordsMatch && (
-              <div style={{ fontSize: 12, marginTop: 5, color: 'var(--color-neutral-300)' }}>Passwords don\u2019t match.</div>
+              <div style={{ fontSize: 12, marginTop: 5, color: 'var(--color-neutral-300)' }}>Passwords don’t match.</div>
             )}
           </div>
 

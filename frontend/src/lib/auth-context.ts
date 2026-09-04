@@ -8,6 +8,8 @@ export interface AuthContextValue {
   register: (email: string, password: string) => Promise<void>;
   verifyOtp: (email: string, code: string) => Promise<void>;
   resendOtp: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   logout: () => void;
 }
 

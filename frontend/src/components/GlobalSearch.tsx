@@ -47,7 +47,7 @@ export function GlobalSearch() {
     <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
       <input
         className="input"
-        placeholder="Search topics, papers, resources\u2026"
+        placeholder="Search topics, papers, resources…"
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -74,7 +74,7 @@ export function GlobalSearch() {
             padding: 'var(--space-2)',
           }}
         >
-          {isFetching && <div style={{ fontSize: 12.5, padding: 'var(--space-2)', opacity: 0.6 }}>Searching\u2026</div>}
+          {isFetching && <div style={{ fontSize: 12.5, padding: 'var(--space-2)', opacity: 0.6 }}>Searching…</div>}
 
           {!isFetching && !hasResults && (
             <div style={{ fontSize: 12.5, padding: 'var(--space-2)', opacity: 0.6 }}>No results for "{debouncedQuery}"</div>

@@ -29,7 +29,7 @@ export function Landing() {
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
           gap: 'clamp(24px,5vw,56px)',
-          alignItems: 'center',
+          alignItems: 'start',
         }}
       >
         <div style={{ minWidth: 0 }}>
@@ -91,12 +91,11 @@ export function Landing() {
           </div>
           <div
             style={{
-              alignSelf: 'flex-end',
-              maxWidth: '82%',
+              width: '100%',
               border: '1px solid var(--color-divider)',
-              borderRadius: '12px 12px 3px 12px',
-              padding: '9px 13px',
-              fontSize: 14,
+              borderRadius: 'var(--radius-md)',
+              padding: '12px 15px',
+              fontSize: 15,
             }}
           >
             Differentiate <Math tex="x^{2}\sin x" /> with respect to <Math tex="x" />.
@@ -133,38 +132,25 @@ export function Landing() {
         </div>
       </section>
 
-      <section
-        style={{
-          background: 'var(--color-section)',
-          backgroundImage: 'radial-gradient(120% 140% at 12% 0%, var(--color-section-glow), transparent 62%)',
-        }}
-      >
+      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '0 clamp(18px,4vw,40px) clamp(20px,4vw,40px)' }}>
         <div
           style={{
-            maxWidth: 1180,
-            margin: '0 auto',
-            padding: 'clamp(26px,4vw,44px) clamp(18px,4vw,40px)',
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))',
-            gap: 'var(--space-8)',
+            gap: 'var(--space-4)',
           }}
         >
-          <div>
-            <div style={{ fontSize: 'clamp(26px,3vw,34px)', fontFamily: 'var(--font-heading)' }}>6 years</div>
-            <div style={{ fontSize: 13, opacity: 0.72, marginTop: 4 }}>of past papers, question by question</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 'clamp(26px,3vw,34px)', fontFamily: 'var(--font-heading)' }}>18 topics</div>
-            <div style={{ fontSize: 13, opacity: 0.72, marginTop: 4 }}>mapped to the official syllabus sections</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 'clamp(26px,3vw,34px)', fontFamily: 'var(--font-heading)' }}>2 languages</div>
-            <div style={{ fontSize: 13, opacity: 0.72, marginTop: 4 }}>explanations in English and Tamil</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 'clamp(26px,3vw,34px)', fontFamily: 'var(--font-heading)' }}>0 detours</div>
-            <div style={{ fontSize: 13, opacity: 0.72, marginTop: 4 }}>anything outside the syllabus is labelled</div>
-          </div>
+          {[
+            { value: '6 years', label: 'of past papers, question by question' },
+            { value: '18 topics', label: 'mapped to the official syllabus sections' },
+            { value: '2 languages', label: 'explanations in English and Tamil' },
+            { value: '0 detours', label: 'anything outside the syllabus is labelled' },
+          ].map((stat) => (
+            <div key={stat.value} className="card elev-sm" style={{ padding: 'var(--space-5) var(--space-4)', gap: 4 }}>
+              <div style={{ fontSize: 'clamp(24px,2.6vw,30px)', fontFamily: 'var(--font-heading)', color: 'var(--color-accent)' }}>{stat.value}</div>
+              <div style={{ fontSize: 13, color: 'color-mix(in srgb, var(--color-text) 68%, transparent)' }}>{stat.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 

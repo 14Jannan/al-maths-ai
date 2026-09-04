@@ -34,4 +34,26 @@ public class EmailService
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
     }
+
+    public async Task SendPasswordResetOtpEmailAsync(string toEmail, string code)
+    {
+        var fromEmail = _configuration["Gmail:Email"]!;
+        var appPassword = _configuration["Gmail:AppPassword"]!;
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("iMath", fromEmail));
+        message.To.Add(new MailboxAddress("", toEmail));
+        message.Subject = "Your iMath password reset code";
+
+        message.Body = new TextPart("plain")
+        {
+            Text = $"Your iMath password reset code is: {code}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, you can ignore this email — your password won't change."
+        };
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+        await client.AuthenticateAsync(fromEmail, appPassword);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
+    }
 }

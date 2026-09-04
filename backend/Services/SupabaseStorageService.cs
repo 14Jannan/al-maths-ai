@@ -32,6 +32,9 @@ public class SupabaseStorageService
 
         var request = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
         request.Headers.Add("Authorization", $"Bearer {serviceRoleKey}");
+        // Supabase's gateway expects this on every REST/Storage request,
+        // separately from Authorization (which carries the role for RLS).
+        request.Headers.Add("apikey", serviceRoleKey);
         request.Content = new StreamContent(fileStream);
         request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
 

@@ -62,6 +62,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const forgotPassword = useCallback(async (email: string) => {
+    await apiFetch<{ message: string }>('/api/Auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, code: string, newPassword: string) => {
+    await apiFetch<{ message: string }>('/api/Auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, code, newPassword }),
+    });
+  }, []);
+
   const logout = useCallback(() => {
     clearToken();
     localStorage.removeItem('al_maths_ai_email');
@@ -77,6 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     verifyOtp,
     resendOtp,
+    forgotPassword,
+    resetPassword,
     logout,
   };
 

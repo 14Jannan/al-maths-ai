@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/use-auth';
 import { ApiError } from '../lib/api';
 
 export function Login() {
-  const { login } = useAuth();
+  const { login, isLoggedIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,13 +14,24 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const resetSuccess = Boolean((location.state as { resetSuccess?: boolean } | null)?.resetSuccess);
+
+  // Already logged in (e.g. hit Back after a successful login) — don't show
+  // the login form again, and don't leave "/login" as a page Back can land
+  // on, or the next Back press just bounces here again instead of leaving.
+  if (isLoggedIn) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
     try {
       await login(email, password);
-      navigate('/dashboard');
+      // replace, not push — once logged in, "/login" shouldn't linger as a
+      // Back target the user can land back on.
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
         navigate('/verify-otp', { state: { email } });
@@ -38,6 +50,11 @@ export function Login() {
         <p style={{ fontSize: 14, color: 'color-mix(in srgb, var(--color-text) 65%, transparent)', marginBottom: 'var(--space-8)' }}>
           Log in to continue where you left off.
         </p>
+        {resetSuccess && (
+          <div style={{ fontSize: 13, color: 'var(--color-accent)', marginBottom: 'var(--space-4)' }}>
+            Password reset — log in with your new password.
+          </div>
+        )}
         <form style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }} onSubmit={handleSubmit}>
           <div className="field">
             <label>Email</label>
@@ -51,7 +68,10 @@ export function Login() {
             />
           </div>
           <div className="field">
-            <label>Password</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+              <label style={{ marginBottom: 0, fontSize: 12, color: 'color-mix(in srgb, var(--color-text) 70%, transparent)' }}>Password</label>
+              <Link to="/forgot-password" style={{ fontSize: 12.5 }}>Forgot password?</Link>
+            </div>
             <div style={{ position: 'relative' }}>
               <input
                 className="input"
