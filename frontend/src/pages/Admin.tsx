@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useRef, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, ApiError } from '../lib/api';
 
@@ -177,6 +177,9 @@ function PapersAdmin() {
     mathTopicId: 0,
   });
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedImageUrl, setExtractedImageUrl] = useState<string | null>(null);
 
   const createPaper = useMutation({
     mutationFn: (dto: typeof form) => apiFetch<PastPaper>('/api/PastPapers', { method: 'POST', body: JSON.stringify(dto) }),
@@ -186,6 +189,32 @@ function PapersAdmin() {
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Failed to create question'),
   });
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsExtracting(true);
+    setError(null);
+    setExtractedImageUrl(null);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const result = await apiFetch<{ extractedText: string; imageUrl: string }>('/api/PastPapers/extract-from-image', {
+        method: 'POST',
+        body: formData,
+      });
+      // Pre-fill the question text field with what the AI transcribed —
+      // the admin should still read it over and correct anything before saving.
+      setForm((prev) => ({ ...prev, questionText: result.extractedText }));
+      setExtractedImageUrl(result.imageUrl);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not read the photo. Try a clearer image.');
+    } finally {
+      setIsExtracting(false);
+      e.target.value = '';
+    }
+  }
 
   const deletePaper = useMutation({
     mutationFn: (id: number) => apiFetch<void>(`/api/PastPapers/${id}`, { method: 'DELETE' }),
@@ -205,6 +234,25 @@ function PapersAdmin() {
   return (
     <div>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
+        <div style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)', border: '1px dashed color-mix(in srgb, var(--color-text) 25%, transparent)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>Upload a question photo (optional)</div>
+          <p style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 58%, transparent)', margin: '0 0 10px' }}>
+            The AI will transcribe the text from the photo into the Question text field below — review and correct it before saving.
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handlePhotoUpload}
+            disabled={isExtracting}
+          />
+          {isExtracting && <div style={{ fontSize: 12.5, color: 'var(--color-accent)', marginTop: 8 }}>Reading the question from the photo…</div>}
+          {extractedImageUrl && !isExtracting && (
+            <div style={{ marginTop: 10 }}>
+              <img src={extractedImageUrl} alt="Uploaded question" style={{ maxWidth: 220, maxHeight: 160, borderRadius: 'var(--radius-sm)', display: 'block' }} />
+            </div>
+          )}
+        </div>
         <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <div className="field" style={{ width: 100 }}>
             <label>Year</label>
