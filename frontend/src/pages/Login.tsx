@@ -11,6 +11,7 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -51,14 +52,25 @@ export function Login() {
           </div>
           <div className="field">
             <label>Password</label>
-            <input
-              className="input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                className="input"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password"
+                required
+                style={{ paddingRight: 38 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', padding: 4 }}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? '\u{1F648}' : '\u{1F441}\u{FE0F}'}
+              </button>
+            </div>
             {error && (
               <div style={{ fontSize: 12, marginTop: 5, color: 'var(--color-neutral-300)', display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span style={{ width: 13, height: 13, border: '1px solid currentColor', borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 9 }}>!</span>
