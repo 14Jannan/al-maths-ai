@@ -54,7 +54,13 @@ export function Settings() {
   });
   const isPremium = subscription?.isPremium ?? false;
 
-  const initials = (username ?? email ?? '?').slice(0, 2).toUpperCase();
+  // A username-less legacy account falls back to email for display —
+  // show it only once (as the name), and derive initials from letters
+  // only, so an email like "1407jannan@..." doesn't show "14".
+  const displayName = username ?? email ?? '—';
+  const showEmailSubtitle = Boolean(email) && email !== displayName;
+  const letters = (username ?? email ?? '').match(/[a-zA-Z]/g) ?? [];
+  const initials = (letters.slice(0, 2).join('') || '?').toUpperCase();
 
   function handleLogout() {
     logout();
@@ -70,16 +76,16 @@ export function Settings() {
 
       {/* Account */}
       <SettingsSection title="Account">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-5) 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4) 0' }}>
           <span
             style={{
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               borderRadius: '50%',
               background: 'var(--color-inset)',
               display: 'grid',
               placeItems: 'center',
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               flexShrink: 0,
               color: 'var(--color-accent)',
@@ -88,12 +94,14 @@ export function Settings() {
             {initials}
           </span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {username ?? email}
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 14.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {displayName}
             </div>
-            <div style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 58%, transparent)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {email}
-            </div>
+            {showEmailSubtitle && (
+              <div style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 58%, transparent)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                {email}
+              </div>
+            )}
           </div>
           <button className="btn btn-secondary" style={{ fontSize: 12.5, flexShrink: 0 }} onClick={() => navigate('/account')}>
             Manage
