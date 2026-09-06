@@ -17,13 +17,13 @@ function SettingsRow({ title, description, control }: { title: string; descripti
         padding: 'var(--space-4) 0',
       }}
     >
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, maxWidth: '60%' }}>
         <div style={{ fontFamily: 'var(--font-heading)', fontSize: 14.5 }}>{title}</div>
         <div style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)', marginTop: 2 }}>
           {description}
         </div>
       </div>
-      <div style={{ flexShrink: 0 }}>{control}</div>
+      <div style={{ flexShrink: 0, minWidth: 120, display: 'flex', justifyContent: 'flex-end' }}>{control}</div>
     </div>
   );
 }
@@ -68,7 +68,7 @@ export function Settings() {
   }
 
   return (
-    <main style={{ flex: 1, width: '100%', maxWidth: 720, margin: '0 auto', padding: 'clamp(22px,4vw,40px) clamp(18px,4vw,40px) 64px' }}>
+    <main style={{ flex: 1, width: '100%', maxWidth: 600, margin: '0 auto', padding: 'clamp(22px,4vw,40px) clamp(18px,4vw,40px) 64px' }}>
       <h2 style={{ marginBottom: 'var(--space-2)' }}>Settings</h2>
       <p style={{ margin: '0 0 var(--space-8)', fontSize: 14, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>
         Manage your account, appearance, and how iMath works for you.
