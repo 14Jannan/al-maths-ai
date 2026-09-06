@@ -6,12 +6,16 @@ import { getSubscriptionStatus } from '../lib/payments';
 import { listConversations, renameConversation, deleteConversation, type ConversationSummary } from '../lib/conversations';
 import { GlobalSearch } from './GlobalSearch';
 
-// A student's nav — the plain student-facing browse pages.
+// A student's nav — the plain student-facing browse pages. Each item's
+// color is a fixed slot from the app's own chart palette (design-system.css
+// --chart-series-1..8) — a small color-coded dot next to the label, so the
+// nav reads less like a monochrome list and doubles as a quick visual
+// landmark once you're used to "Topics is teal, Resources is green", etc.
 const studentTailItems = [
-  { to: '/topics', label: 'Topics' },
-  { to: '/papers', label: 'Past Papers' },
-  { to: '/resources', label: 'Resources' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/topics', label: 'Topics', color: 'var(--chart-series-3)' },
+  { to: '/papers', label: 'Past Papers', color: 'var(--chart-series-4)' },
+  { to: '/resources', label: 'Resources', color: 'var(--chart-series-6)' },
+  { to: '/settings', label: 'Settings', color: 'var(--chart-series-7)' },
 ];
 
 // An admin isn't a student — always show the admin management pages
@@ -21,14 +25,14 @@ const studentTailItems = [
 // Admin.tsx) are real sidebar links here, reachable/bookmarkable the same
 // way every other page in the app is.
 const adminTailItems = [
-  { to: '/admin', label: 'Overview' },
-  { to: '/admin/users', label: 'Users' },
-  { to: '/admin/topics', label: 'Topics' },
-  { to: '/admin/papers', label: 'Papers' },
-  { to: '/admin/resources', label: 'Resources' },
-  { to: '/admin/documents', label: 'Documents' },
-  { to: '/admin/exampapers', label: 'Exam Papers' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/admin', label: 'Overview', color: 'var(--chart-series-1)' },
+  { to: '/admin/users', label: 'Users', color: 'var(--chart-series-2)' },
+  { to: '/admin/topics', label: 'Topics', color: 'var(--chart-series-3)' },
+  { to: '/admin/papers', label: 'Papers', color: 'var(--chart-series-4)' },
+  { to: '/admin/resources', label: 'Resources', color: 'var(--chart-series-6)' },
+  { to: '/admin/documents', label: 'Documents', color: 'var(--chart-series-5)' },
+  { to: '/admin/exampapers', label: 'Exam Papers', color: 'var(--chart-series-8)' },
+  { to: '/settings', label: 'Settings', color: 'var(--chart-series-7)' },
 ];
 
 function groupConversations(conversations: ConversationSummary[]) {
@@ -341,6 +345,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             to={item.to}
             onClick={onNavigate}
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
               fontSize: 14,
               padding: '8px 10px',
               borderRadius: 'var(--radius-sm)',
@@ -350,6 +357,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               fontWeight: isActive(item.to) ? 500 : 400,
             }}
           >
+            <span style={{ width: 6, height: 6, flexShrink: 0, borderRadius: '50%', background: item.color }} />
             {item.label}
           </Link>
         ))}
