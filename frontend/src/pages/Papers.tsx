@@ -8,6 +8,7 @@ interface PastPaper {
   paper: string;
   questionNumber: string;
   questionText: string;
+  questionImageUrl: string | null;
   answer: string;
   explanation: string;
   difficulty: string;
@@ -188,6 +189,9 @@ function QuestionPracticeView() {
               </div>
 
               <div style={{ fontSize: 14.5 }}>{p.questionText}</div>
+              {p.questionImageUrl && (
+                <img src={p.questionImageUrl} alt="Question diagram" style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 'var(--radius-sm)' }} />
+              )}
 
               {isOpen && (
                 <div style={{ borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>

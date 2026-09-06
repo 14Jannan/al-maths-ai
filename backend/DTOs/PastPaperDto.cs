@@ -7,6 +7,7 @@ public class PastPaperDto
     public string Paper { get; set; } = string.Empty;
     public string QuestionNumber { get; set; } = string.Empty;
     public string QuestionText { get; set; } = string.Empty;
+    public string? QuestionImageUrl { get; set; }
     public string Answer { get; set; } = string.Empty;
     public string Explanation { get; set; } = string.Empty;
     public string Difficulty { get; set; } = "Medium";

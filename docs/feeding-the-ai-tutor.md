@@ -69,6 +69,14 @@ Paste an array of these (as many as you have typed up):
 
 (These can shift if you add/remove topics — re-check `GET /api/MathTopics` if you're not sure.)
 
+### What about questions with a diagram or graph?
+
+Transcribing a diagram question to plain text loses the picture — so `PastPapers` now has a second, optional field: `questionImageUrl`. The AI's semantic search still only reads `questionText` (embeddings are text-only), but the actual diagram photo gets stored and shown to the student on the practice page.
+
+- **Option A (single form)** already handles this for you: when you use the photo-upload button, the uploaded image's URL is captured automatically into `questionImageUrl` alongside the transcribed text — you don't do anything extra.
+- **Option B (bulk JSON)** has no upload step, so if a question in your batch has a diagram, you can't get its image URL through the JSON box alone. Workflow: add that one question through Option A first (photo upload → auto-fills text + image), then bulk-import the rest of the batch (the ones without diagrams) through Option B.
+- If the AI misreads a pure diagram with little/no text (e.g. "find angle θ" off a triangle picture), just type a short manual description into **Question text** yourself (e.g. `"See diagram — find angle θ"`) — the image is already attached regardless, and the search still has something to match on.
+
 ## 3. How to test it worked
 
 1. Open the AI Tutor and ask a question close in topic to one you just added (doesn't need to be word-for-word identical — the matching is by meaning, not exact text).
@@ -87,3 +95,20 @@ These are refinements, not required to get started — the plan I gave earlier, 
 2. **Embed on Question+Answer combined**, not just the question text, once you have enough volume — better grounding matches.
 3. **Build up coverage deliberately**: rather than random questions, go topic by topic (e.g. all of Calculus first) so a student asking anything in that topic reliably gets a match, instead of sparse coverage across everything.
 4. **Test with a checklist** of 5-10 real exam questions per topic once you've entered enough — confirm correct citations, and that marking-scheme formatting doesn't show up for non-exam-style concept questions (it shouldn't — the prompt already restricts it to "specific solvable problem" questions).
+
+## 5. Worked example: adding your 2022 paper
+
+Concretely, here's the order to actually do this for one paper:
+
+1. **Open your source**: pull up the 2022 question paper PDF and its marking scheme PDF side by side (you already have both linked in Admin → Exam Papers).
+2. **Go question by question**, sorting each into one of two piles as you go:
+   - **Text-only** (algebra, calculus working, no picture needed) → save these for step 4.
+   - **Has a diagram/graph** (vectors, forces diagrams, coordinate geometry sketches, statistics charts) → do these with Option A, right away, one at a time:
+     - Admin → Papers → upload a photo of just that question from the PDF (a screenshot or phone photo both work) → the text auto-fills → correct anything OCR got wrong → type the Answer and Explanation from the marking scheme → pick Year `2022`, the matching Paper (I or II), Question #, Difficulty, Language, and Topic → **Add question**.
+   - Repeat for each diagram question. Each one saves immediately (no batching needed for these).
+3. **For each text-only question**, type up a JSON object like the example in section 2 — `year: 2022`, correct `paper`/`questionNumber`, the question text, answer, and a marking-scheme-style `explanation` (labelled `Step 1 (M1): ...` etc. so the AI learns to answer the same way).
+4. **Paste all the text-only ones as one array** into the Bulk import box and click **Import all** — this is much faster than adding them one by one once you have several typed up.
+5. **Verify**: go to `GET /api/PastPapers?year=2022` (or just check the Admin → Papers table, filter by eye) and confirm the count matches how many questions you intended to add, and that the diagram ones show 🖼️ in the Image? column.
+6. **Test it**: ask the AI Tutor a question on a topic from the 2022 paper you just added, and check for the "Related past paper questions" section and marking-scheme-style steps, per section 3 above.
+
+You don't need to do the whole paper in one sitting — importing in small batches (e.g. one topic's worth of questions at a time) and testing as you go is easier to debug than typing up 30+ questions before checking anything works.

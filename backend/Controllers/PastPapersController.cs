@@ -43,7 +43,7 @@ public class PastPapersController : ControllerBase
             .Select(p => new PastPaperDto
             {
                 Id = p.Id, Year = p.Year, Paper = p.Paper, QuestionNumber = p.QuestionNumber,
-                QuestionText = p.QuestionText, Answer = p.Answer, Explanation = p.Explanation,
+                QuestionText = p.QuestionText, QuestionImageUrl = p.QuestionImageUrl, Answer = p.Answer, Explanation = p.Explanation,
                 Difficulty = p.Difficulty, Language = p.Language, MathTopicId = p.MathTopicId,
                 MathTopicName = p.MathTopic!.Name
             }).ToListAsync();
@@ -60,7 +60,7 @@ public class PastPapersController : ControllerBase
         return Ok(new PastPaperDto
         {
             Id = paper.Id, Year = paper.Year, Paper = paper.Paper, QuestionNumber = paper.QuestionNumber,
-            QuestionText = paper.QuestionText, Answer = paper.Answer, Explanation = paper.Explanation,
+            QuestionText = paper.QuestionText, QuestionImageUrl = paper.QuestionImageUrl, Answer = paper.Answer, Explanation = paper.Explanation,
             Difficulty = paper.Difficulty, Language = paper.Language, MathTopicId = paper.MathTopicId,
             MathTopicName = paper.MathTopic?.Name
         });
@@ -80,7 +80,7 @@ public class PastPapersController : ControllerBase
         var paper = new PastPaper
         {
             Year = dto.Year, Paper = dto.Paper, QuestionNumber = dto.QuestionNumber,
-            QuestionText = dto.QuestionText, Answer = dto.Answer, Explanation = dto.Explanation,
+            QuestionText = dto.QuestionText, QuestionImageUrl = dto.QuestionImageUrl, Answer = dto.Answer, Explanation = dto.Explanation,
             Difficulty = dto.Difficulty, Language = dto.Language, MathTopicId = dto.MathTopicId,
             Embedding = await ComputeEmbedding(dto)
         };
@@ -103,7 +103,7 @@ public class PastPapersController : ControllerBase
             entities.Add(new PastPaper
             {
                 Year = dto.Year, Paper = dto.Paper, QuestionNumber = dto.QuestionNumber,
-                QuestionText = dto.QuestionText, Answer = dto.Answer, Explanation = dto.Explanation,
+                QuestionText = dto.QuestionText, QuestionImageUrl = dto.QuestionImageUrl, Answer = dto.Answer, Explanation = dto.Explanation,
                 Difficulty = dto.Difficulty, Language = dto.Language, MathTopicId = dto.MathTopicId,
                 Embedding = await ComputeEmbedding(dto)
             });
@@ -121,7 +121,7 @@ public class PastPapersController : ControllerBase
         if (paper == null) return NotFound();
 
         paper.Year = dto.Year; paper.Paper = dto.Paper; paper.QuestionNumber = dto.QuestionNumber;
-        paper.QuestionText = dto.QuestionText; paper.Answer = dto.Answer; paper.Explanation = dto.Explanation;
+        paper.QuestionText = dto.QuestionText; paper.QuestionImageUrl = dto.QuestionImageUrl; paper.Answer = dto.Answer; paper.Explanation = dto.Explanation;
         paper.Difficulty = dto.Difficulty; paper.Language = dto.Language; paper.MathTopicId = dto.MathTopicId;
         paper.Embedding = await ComputeEmbedding(dto); // content changed — recompute
 

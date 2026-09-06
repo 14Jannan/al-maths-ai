@@ -16,6 +16,7 @@ interface PastPaper {
   paper: string;
   questionNumber: string;
   questionText: string;
+  questionImageUrl: string | null;
   answer: string;
   explanation: string;
   difficulty: string;
@@ -188,6 +189,7 @@ function PapersAdmin() {
     paper: 'Paper I',
     questionNumber: '',
     questionText: '',
+    questionImageUrl: '',
     answer: '',
     explanation: '',
     difficulty: 'Medium',
@@ -206,7 +208,7 @@ function PapersAdmin() {
     mutationFn: (dto: typeof form) => apiFetch<PastPaper>('/api/PastPapers', { method: 'POST', body: JSON.stringify(dto) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pastPapers'] });
-      setForm({ ...form, questionNumber: '', questionText: '', answer: '', explanation: '' });
+      setForm({ ...form, questionNumber: '', questionText: '', questionImageUrl: '', answer: '', explanation: '' });
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Failed to create question'),
   });
@@ -252,7 +254,7 @@ function PapersAdmin() {
       });
       // Pre-fill the question text field with what the AI transcribed —
       // the admin should still read it over and correct anything before saving.
-      setForm((prev) => ({ ...prev, questionText: result.extractedText }));
+      setForm((prev) => ({ ...prev, questionText: result.extractedText, questionImageUrl: result.imageUrl }));
       setExtractedImageUrl(result.imageUrl);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not read the photo. Try a clearer image.');
@@ -383,13 +385,14 @@ function PapersAdmin() {
       {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>}
       {papers && papers.length > 0 && (
         <table className="table">
-          <thead><tr><th>Year</th><th>Q#</th><th>Topic</th><th></th></tr></thead>
+          <thead><tr><th>Year</th><th>Q#</th><th>Topic</th><th>Image?</th><th></th></tr></thead>
           <tbody>
             {papers.map((p) => (
               <tr key={p.id}>
                 <td>{p.year} · {p.paper}</td>
                 <td>{p.questionNumber}</td>
                 <td>{p.mathTopicName}</td>
+                <td>{p.questionImageUrl ? '🖼️' : '—'}</td>
                 <td style={{ textAlign: 'right' }}>
                   <button className="btn btn-ghost" style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }} onClick={() => deletePaper.mutate(p.id)}>
                     Delete
