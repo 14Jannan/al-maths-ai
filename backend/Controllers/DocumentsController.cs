@@ -63,15 +63,20 @@ public class DocumentsController : ControllerBase
             return BadRequest("Only PDF files are supported");
         }
 
-        string extractedText;
+                string extractedText;
+        int pageCount;
         using (var stream = file.OpenReadStream())
         {
             extractedText = _processingService.ExtractTextFromPdf(stream);
         }
+        using (var stream = file.OpenReadStream())
+        {
+            pageCount = _processingService.GetPdfPageCount(stream);
+        }
 
         List<string> chunks;
 
-        if (_processingService.HasExtractableText(extractedText))
+        if (_processingService.HasExtractableText(extractedText, pageCount))
         {
             // Normal path: PDF has a real text layer
             chunks = _processingService.ChunkText(extractedText);
