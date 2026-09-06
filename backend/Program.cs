@@ -2,10 +2,28 @@ using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Three separate limits all have to raise together for a large upload to
+// actually go through — missing any one of them rejects the request before
+// the controller runs, even though [RequestSizeLimit] on the action looks
+// like it should be enough on its own:
+//  1. Kestrel's own request body limit (default ~28MB)
+//  2. ASP.NET Core's multipart form parser limit (default 128MB) — this one
+//     is easy to miss, since a file just under 128MB works fine and hides
+//     the gap until someone uploads something bigger.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 150_000_000; // 150 MB, for large scanned PDFs
+});
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 150_000_000;
+});
 
 // Allow the frontend (running on a different port) to call this API.
 // Vite bumps to the next free port (5174, 5175, ...) whenever 5173 is
