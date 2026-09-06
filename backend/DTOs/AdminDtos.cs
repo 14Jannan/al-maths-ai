@@ -18,14 +18,19 @@ public class AdminUserDto
 {
     public string Id { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
     public bool EmailConfirmed { get; set; }
     public bool IsAdmin { get; set; }
     public bool IsPremium { get; set; }
     public string? SubscriptionExpiresAt { get; set; }
 }
 
-public class SetRoleDto
+// One combined "edit user" save — details + role together, so the admin
+// table's Edit action doesn't need a separate Make-Admin control.
+public class UpdateUserDto
 {
+    public string Email { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
     public bool IsAdmin { get; set; }
 }
 

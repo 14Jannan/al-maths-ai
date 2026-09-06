@@ -125,6 +125,7 @@ public class AdminController : ControllerBase
             {
                 Id = u.Id,
                 Email = u.Email ?? string.Empty,
+                UserName = u.UserName ?? string.Empty,
                 EmailConfirmed = u.EmailConfirmed,
                 IsAdmin = adminIds.Contains(u.Id),
                 IsPremium = isPremium,
@@ -135,17 +136,44 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("users/{id}/role")]
-    public async Task<IActionResult> SetRole(string id, SetRoleDto dto)
+    // Replaces the old standalone "Make Admin" button — the admin table's
+    // Edit action now saves email/username/role together in one call.
+    [HttpPut("users/{id}")]
+    public async Task<IActionResult> UpdateUser(string id, UpdateUserDto dto)
     {
         var user = await _userManager.FindByIdAsync(id);
         if (user == null) return NotFound();
+
+        if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.UserName))
+        {
+            return BadRequest(new { error = "Email and username are required" });
+        }
 
         // Don't let an admin accidentally remove their own last-admin access
         var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
         if (id == currentUserId && !dto.IsAdmin)
         {
-            return BadRequest("You can't remove your own Admin role.");
+            return BadRequest(new { error = "You can't remove your own Admin role." });
+        }
+
+        // SetEmailAsync/SetUserNameAsync (not a raw property write + SaveChanges)
+        // so Identity's NormalizedEmail/NormalizedUserName stay in sync — those
+        // are what FindByEmailAsync/login actually key off.
+        if (!string.Equals(user.Email, dto.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            var emailResult = await _userManager.SetEmailAsync(user, dto.Email);
+            if (!emailResult.Succeeded)
+            {
+                return BadRequest(new { error = string.Join(" ", emailResult.Errors.Select(e => e.Description)) });
+            }
+        }
+        if (!string.Equals(user.UserName, dto.UserName, StringComparison.Ordinal))
+        {
+            var nameResult = await _userManager.SetUserNameAsync(user, dto.UserName);
+            if (!nameResult.Succeeded)
+            {
+                return BadRequest(new { error = string.Join(" ", nameResult.Errors.Select(e => e.Description)) });
+            }
         }
 
         var isCurrentlyAdmin = await _userManager.IsInRoleAsync(user, "Admin");

@@ -1025,51 +1025,104 @@ function OverviewAdmin() {
 interface AdminUser {
   id: string;
   email: string;
+  userName: string;
   emailConfirmed: boolean;
   isAdmin: boolean;
   isPremium: boolean;
   subscriptionExpiresAt: string | null;
 }
 
+// Replaces the old standalone "Make Admin"/"Remove Admin" button — editing
+// a user's email/username and their role now happens together in one Edit
+// row, saved with a single PUT /api/Admin/users/{id}.
 function UsersAdmin() {
   const queryClient = useQueryClient();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ email: '', userName: '', isAdmin: false });
+  const [error, setError] = useState<string | null>(null);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['adminUsers'],
     queryFn: () => apiFetch<AdminUser[]>('/api/Admin/users'),
   });
 
-  const setRole = useMutation({
-    mutationFn: ({ id, isAdmin }: { id: string; isAdmin: boolean }) =>
-      apiFetch<void>(`/api/Admin/users/${id}/role`, { method: 'POST', body: JSON.stringify({ isAdmin }) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminUsers'] }),
+  const updateUser = useMutation({
+    mutationFn: ({ id, ...dto }: { id: string; email: string; userName: string; isAdmin: boolean }) =>
+      apiFetch<void>(`/api/Admin/users/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+      setEditingId(null);
+      setError(null);
+    },
+    onError: (err) => setError(err instanceof ApiError ? err.message : 'Failed to save changes'),
   });
+
+  function startEdit(u: AdminUser) {
+    setEditingId(u.id);
+    setForm({ email: u.email, userName: u.userName, isAdmin: u.isAdmin });
+    setError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setError(null);
+  }
+
+  function saveEdit(id: string) {
+    updateUser.mutate({ id, ...form });
+  }
 
   if (isLoading) return <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>;
 
   return (
-    <table className="table">
-      <thead><tr><th>Email</th><th>Verified</th><th>Plan</th><th>Role</th><th></th></tr></thead>
-      <tbody>
-        {(users ?? []).map((u) => (
-          <tr key={u.id}>
-            <td>{u.email}</td>
-            <td>{u.emailConfirmed ? '✓' : '—'}</td>
-            <td>{u.isPremium ? `Premium (until ${u.subscriptionExpiresAt})` : 'Free'}</td>
-            <td>{u.isAdmin ? <span className="tag tag-accent">Admin</span> : <span className="tag tag-neutral">Student</span>}</td>
-            <td style={{ textAlign: 'right' }}>
-              <button
-                className="btn btn-ghost"
-                style={{ fontSize: 12.5 }}
-                onClick={() => setRole.mutate({ id: u.id, isAdmin: !u.isAdmin })}
-                disabled={setRole.isPending}
-              >
-                {u.isAdmin ? 'Remove Admin' : 'Make Admin'}
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div>
+      {error && <div style={{ fontSize: 13, color: 'var(--color-neutral-300)', marginBottom: 'var(--space-4)' }}>{error}</div>}
+      <table className="table">
+        <thead><tr><th>Username</th><th>Email</th><th>Verified</th><th>Plan</th><th>Role</th><th></th></tr></thead>
+        <tbody>
+          {(users ?? []).map((u) =>
+            editingId === u.id ? (
+              <tr key={u.id}>
+                <td>
+                  <input className="input" style={{ minHeight: 30, fontSize: 13 }} value={form.userName} onChange={(e) => setForm({ ...form, userName: e.target.value })} />
+                </td>
+                <td>
+                  <input className="input" style={{ minHeight: 30, fontSize: 13 }} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                </td>
+                <td>{u.emailConfirmed ? '✓' : '—'}</td>
+                <td>{u.isPremium ? `Premium (until ${u.subscriptionExpiresAt})` : 'Free'}</td>
+                <td>
+                  <select className="input" style={{ minHeight: 30, fontSize: 13 }} value={form.isAdmin ? 'Admin' : 'Student'} onChange={(e) => setForm({ ...form, isAdmin: e.target.value === 'Admin' })}>
+                    <option>Student</option>
+                    <option>Admin</option>
+                  </select>
+                </td>
+                <td style={{ textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button className="btn btn-primary" style={{ fontSize: 12.5 }} onClick={() => saveEdit(u.id)} disabled={updateUser.isPending}>
+                    {updateUser.isPending ? 'Saving…' : 'Save'}
+                  </button>
+                  <button className="btn btn-ghost" style={{ fontSize: 12.5 }} onClick={cancelEdit} disabled={updateUser.isPending}>
+                    Cancel
+                  </button>
+                </td>
+              </tr>
+            ) : (
+              <tr key={u.id}>
+                <td>{u.userName}</td>
+                <td>{u.email}</td>
+                <td>{u.emailConfirmed ? '✓' : '—'}</td>
+                <td>{u.isPremium ? `Premium (until ${u.subscriptionExpiresAt})` : 'Free'}</td>
+                <td>{u.isAdmin ? <span className="tag tag-accent">Admin</span> : <span className="tag tag-neutral">Student</span>}</td>
+                <td style={{ textAlign: 'right' }}>
+                  <button className="btn btn-ghost" style={{ fontSize: 12.5 }} onClick={() => startEdit(u)}>
+                    Edit
+                  </button>
+                </td>
+              </tr>
+            )
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
