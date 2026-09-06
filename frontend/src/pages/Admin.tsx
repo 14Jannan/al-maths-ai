@@ -837,7 +837,7 @@ function UserGrowthChart({ data }: { data: UserGrowthPoint[] }) {
   return (
     <ChartCard title="User growth" subtitle="Cumulative signups, last 30 days — the platform is growing.">
       <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="userGrowthFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--chart-series-1)" stopOpacity={0.35} />
@@ -916,6 +916,28 @@ function MostAskedTopicsChart({ data }: { data: TopicUsage[] }) {
   );
 }
 
+const RADIAN = Math.PI / 180;
+
+// Outside labels ("Free 6 (86%)") kept spilling past the card edge in a
+// narrow 3-column grid and got clipped by the SVG's own bounds. Drawing the
+// percent INSIDE the ring instead (the standard donut-label placement —
+// project a point partway between inner/outer radius onto the slice's
+// midAngle) can never overflow the chart, regardless of card width. The
+// legend below still carries the Free/Premium identity + exact counts via
+// tooltip, so nothing is lost — just relocated somewhere that can't clip.
+function insidePercentLabel(props: { cx?: number; cy?: number; midAngle?: number; innerRadius?: number; outerRadius?: number; percent?: number }) {
+  const { cx = 0, cy = 0, midAngle = 0, innerRadius = 0, outerRadius = 0, percent = 0 } = props;
+  if (percent === 0) return null;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill="#fff" fontSize={12} fontWeight={600}>
+      {`${Math.round(percent * 100)}%`}
+    </text>
+  );
+}
+
 function FreeVsPremiumChart({ freeUsers, premiumUsers }: { freeUsers: number; premiumUsers: number }) {
   const total = freeUsers + premiumUsers;
   const pieData = [
@@ -930,19 +952,17 @@ function FreeVsPremiumChart({ freeUsers, premiumUsers }: { freeUsers: number; pr
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={220}>
-          <PieChart>
+          <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
             <Pie
               data={pieData}
               dataKey="value"
               nameKey="name"
-              innerRadius={50}
-              outerRadius={78}
+              innerRadius={48}
+              outerRadius={72}
               paddingAngle={2}
               stroke="var(--color-surface)"
               strokeWidth={2}
-              label={(props: { name?: string; value?: number; percent?: number }) =>
-                `${props.name ?? ''} ${props.value ?? 0} (${Math.round((props.percent ?? 0) * 100)}%)`
-              }
+              label={insidePercentLabel}
               labelLine={false}
             >
               {pieData.map((d) => <Cell key={d.name} fill={d.fill} />)}
