@@ -42,4 +42,44 @@ public class DocumentProcessingService
 
         return chunks;
     }
+
+    // A PDF with a real text layer returns substantial text; a scanned PDF
+    // returns empty or near-empty text (PdfPig can't read pixels).
+        // A real text layer produces substantial text on EVERY page. A PDF
+    // whose only "text" is a thin watermark stamped over scanned images
+    // (common with tools like A-PDF Watermark) will pass a simple
+    // "any text at all?" check but fail this average-density check.
+    public bool HasExtractableText(string text, int pageCount)
+    {
+        if (string.IsNullOrWhiteSpace(text) || pageCount == 0) return false;
+        var averageCharsPerPage = text.Trim().Length / (double)pageCount;
+        return averageCharsPerPage > 150;
+    }
+        public int GetPdfPageCount(Stream pdfStream)
+    {
+        using var document = PdfDocument.Open(pdfStream);
+        return document.NumberOfPages;
+    }
+
+    // Converts each page of a scanned PDF into a JPEG image, so it can be
+    // sent to the vision model for OCR instead of text extraction.
+    public async Task<List<byte[]>> RasterizePdfPagesAsync(Stream pdfStream)
+    {
+        using var ms = new MemoryStream();
+        await pdfStream.CopyToAsync(ms);
+        var pdfBytes = ms.ToArray();
+
+        var images = new List<byte[]>();
+        var pageCount = PDFtoImage.Conversion.GetPageCount(pdfBytes);
+
+        for (int i = 0; i < pageCount; i++)
+        {
+            using var bitmap = PDFtoImage.Conversion.ToImage(pdfBytes, page: i);
+            using var imgStream = new MemoryStream();
+            bitmap.Encode(imgStream, SkiaSharp.SKEncodedImageFormat.Jpeg, 85);
+            images.Add(imgStream.ToArray());
+        }
+
+        return images;
+    }
 }
