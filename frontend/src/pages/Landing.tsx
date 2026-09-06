@@ -10,10 +10,10 @@ interface PublicStats {
 }
 
 const steps = [
-  { n: '01', title: 'Ask in English or Tamil', body: 'Type your question the way you\u2019d ask a teacher — the tutor answers in the same language.' },
-  { n: '02', title: 'Get the syllabus method', body: 'The tutor solves it the A/L way first, and clearly labels anything outside the syllabus.' },
-  { n: '03', title: 'See every step', body: 'Full working, not just the final answer — expand steps at your own pace.' },
-  { n: '04', title: 'Practise from past papers', body: 'Jump straight into similar past-paper questions once a topic clicks.' },
+  { n: '01', title: 'Ask in English or Tamil', body: 'Type your question the way you\u2019d ask a teacher — the tutor answers in the same language.' , color: 'var(--chart-series-1)' },
+  { n: '02', title: 'Get the syllabus method', body: 'The tutor solves it the A/L way first, and clearly labels anything outside the syllabus.' , color: 'var(--chart-series-2)' },
+  { n: '03', title: 'See every step', body: 'Full working, not just the final answer — expand steps at your own pace.' , color: 'var(--chart-series-3)' },
+  { n: '04', title: 'Practise from past papers', body: 'Jump straight into similar past-paper questions once a topic clicks.' , color: 'var(--chart-series-7)' },
 ];
 
 export function Landing() {
@@ -101,7 +101,7 @@ export function Landing() {
               color: 'color-mix(in srgb, var(--color-text) 55%, transparent)',
             }}
           >
-            <span style={{ width: 5, height: 5, background: 'var(--color-accent)', transform: 'rotate(45deg)' }} />
+            <span style={{ width: 5, height: 5, background: 'var(--chart-series-1)', transform: 'rotate(45deg)' }} />
             Sample tutor answer
           </div>
           <div
@@ -165,10 +165,10 @@ export function Landing() {
           }}
         >
           {[
-            { value: `${stats?.yearsCovered ?? 10} years`, label: 'of past papers, question by question' },
-            { value: `${stats?.topicsCount ?? 20} topics`, label: 'mapped to the official syllabus sections' },
-            { value: '2 languages', label: 'explanations in English and Tamil' },
-            { value: '0 detours', label: 'anything outside the syllabus is labelled' },
+            { value: `${stats?.yearsCovered ?? 10} years`, label: 'of past papers, question by question', color: 'var(--chart-series-1)' },
+            { value: `${stats?.topicsCount ?? 20} topics`, label: 'mapped to the official syllabus sections', color: 'var(--chart-series-3)' },
+            { value: '2 languages', label: 'explanations in English and Tamil', color: 'var(--chart-series-4)' },
+            { value: '0 detours', label: 'anything outside the syllabus is labelled', color: 'var(--chart-series-5)' },
           ].map((stat) => (
             <div key={stat.value} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flex: '1 1 220px', minWidth: 200 }}>
               <span
@@ -177,7 +177,7 @@ export function Landing() {
                   width: 7,
                   height: 7,
                   marginTop: 6,
-                  background: 'var(--color-accent)',
+                  background: stat.color,
                   transform: 'rotate(45deg)',
                 }}
               />
@@ -194,8 +194,8 @@ export function Landing() {
         <h6 style={{ color: 'var(--color-accent)', marginBottom: 'var(--space-6)' }}>How it works</h6>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 'var(--space-6)' }}>
           {steps.map((s) => (
-            <div key={s.n} style={{ borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-4)' }}>
-              <div style={{ fontSize: 12, color: 'var(--color-accent)', marginBottom: 'var(--space-3)' }}>{s.n}</div>
+            <div key={s.n} style={{ borderTop: `2px solid ${s.color}`, paddingTop: 'var(--space-4)' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: s.color, marginBottom: 'var(--space-3)' }}>{s.n}</div>
               <div style={{ fontFamily: 'var(--font-heading)', fontSize: 18, marginBottom: 'var(--space-2)' }}>{s.title}</div>
               <div style={{ fontSize: 13.5, lineHeight: 1.6, color: 'color-mix(in srgb, var(--color-text) 68%, transparent)' }}>
                 {s.body}
