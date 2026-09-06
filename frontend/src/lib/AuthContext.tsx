@@ -89,6 +89,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmail(null);
     setUsername(null);
     setIsAdmin(false);
+
+    // A plain `navigate('/')` from the caller raced ProtectedRoute: React
+    // batches this logout's setState with the router's own state, so on the
+    // page you were logged in on (e.g. /settings), ProtectedRoute could see
+    // the new isLoggedIn=false BEFORE the route actually changed to '/' and
+    // bounce to /login itself, winning the race against the intended
+    // landing-page redirect — landing you on /login instead of '/'.
+    // A hard reload sidesteps the whole race: it can't lose to anything
+    // still running in the React tree, and it also guarantees every other
+    // bit of in-memory state (React Query cache, component state) is gone,
+    // not just the auth token.
+    window.location.href = '/';
   }, []);
 
   const value: AuthContextValue = {

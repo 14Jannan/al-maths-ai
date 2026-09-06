@@ -149,6 +149,7 @@ function TopicsAdmin() {
       {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>}
 
       {topics && topics.length > 0 && (
+        <div className="table-wrap">
         <table className="table">
           <thead><tr><th></th><th>Name</th><th>Branch</th><th>Description</th><th></th></tr></thead>
           <tbody>
@@ -167,6 +168,7 @@ function TopicsAdmin() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
@@ -380,6 +382,7 @@ function PapersAdmin() {
 
       {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>}
       {papers && papers.length > 0 && (
+        <div className="table-wrap">
         <table className="table">
           <thead><tr><th>Year</th><th>Q#</th><th>Topic</th><th>Image?</th><th></th></tr></thead>
           <tbody>
@@ -398,6 +401,7 @@ function PapersAdmin() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
@@ -486,6 +490,7 @@ function ResourcesAdmin() {
       {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>}
 
       {resources && resources.length > 0 && (
+        <div className="table-wrap">
         <table className="table">
           <thead><tr><th>Title</th><th>Type</th><th>Language</th><th>Branch</th><th>Topic</th><th></th></tr></thead>
           <tbody>
@@ -505,6 +510,7 @@ function ResourcesAdmin() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
@@ -592,6 +598,7 @@ function DocumentsAdmin() {
       {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>}
 
       {documents && documents.length > 0 && (
+        <div className="table-wrap">
         <table className="table">
           <thead><tr><th>Document</th><th>Chunks</th><th></th></tr></thead>
           <tbody>
@@ -608,6 +615,7 @@ function DocumentsAdmin() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
@@ -744,6 +752,7 @@ function ExamPapersAdmin() {
 
       {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>}
       {papers && papers.length > 0 && (
+        <div className="table-wrap">
         <table className="table">
           <thead><tr><th>Year</th><th>Medium</th><th>Scheme?</th><th>Source</th><th></th></tr></thead>
           <tbody>
@@ -761,6 +770,7 @@ function ExamPapersAdmin() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
@@ -780,11 +790,11 @@ interface AdminOverview {
   chatMessagesToday: number;
 }
 
-function StatCard({ label, value }: { label: string; value: number | string }) {
+function StatCard({ label, value, color }: { label: string; value: number | string; color?: string }) {
   return (
-    <div className="card" style={{ padding: 'var(--space-4)', gap: 6 }}>
+    <div className="card" style={{ padding: 'var(--space-4)', gap: 6, borderTop: color ? `3px solid ${color}` : undefined }}>
       <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-heading)', fontSize: 26 }}>{value}</div>
+      <div style={{ fontFamily: 'var(--font-heading)', fontSize: 26, color: color ?? 'var(--color-text)' }}>{value}</div>
     </div>
   );
 }
@@ -991,10 +1001,10 @@ function OverviewAdmin() {
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
-        <StatCard label="Total users" value={data.totalUsers} />
-        <StatCard label="Premium subscribers" value={data.premiumSubscribers} />
-        <StatCard label="Admins" value={data.adminCount} />
-        <StatCard label="Chat messages today" value={data.chatMessagesToday} />
+        <StatCard label="Total users" value={data.totalUsers} color="var(--chart-series-1)" />
+        <StatCard label="Premium subscribers" value={data.premiumSubscribers} color="var(--chart-series-2)" />
+        <StatCard label="Admins" value={data.adminCount} color="var(--chart-series-7)" />
+        <StatCard label="Chat messages today" value={data.chatMessagesToday} color="var(--chart-series-3)" />
       </div>
 
       <h6 style={{ color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 'var(--space-4)' }}>Insights</h6>
@@ -1010,11 +1020,11 @@ function OverviewAdmin() {
 
       <h6 style={{ color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 'var(--space-4)' }}>Content</h6>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 'var(--space-3)' }}>
-        <StatCard label="Topics" value={data.topicsCount} />
-        <StatCard label="Past paper questions" value={data.pastPaperQuestionsCount} />
-        <StatCard label="Resources" value={data.resourcesCount} />
-        <StatCard label="Full exam papers" value={data.examPaperDocumentsCount} />
-        <StatCard label="Document chunks (RAG)" value={data.documentChunksCount} />
+        <StatCard label="Topics" value={data.topicsCount} color="var(--chart-series-4)" />
+        <StatCard label="Past paper questions" value={data.pastPaperQuestionsCount} color="var(--chart-series-5)" />
+        <StatCard label="Resources" value={data.resourcesCount} color="var(--chart-series-6)" />
+        <StatCard label="Full exam papers" value={data.examPaperDocumentsCount} color="var(--chart-series-8)" />
+        <StatCard label="Document chunks (RAG)" value={data.documentChunksCount} color="var(--chart-series-1)" />
       </div>
     </div>
   );
@@ -1077,6 +1087,7 @@ function UsersAdmin() {
   return (
     <div>
       {error && <div style={{ fontSize: 13, color: 'var(--color-neutral-300)', marginBottom: 'var(--space-4)' }}>{error}</div>}
+      <div className="table-wrap">
       <table className="table">
         <thead><tr><th>Username</th><th>Email</th><th>Verified</th><th>Plan</th><th>Role</th><th></th></tr></thead>
         <tbody>
@@ -1123,6 +1134,7 @@ function UsersAdmin() {
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

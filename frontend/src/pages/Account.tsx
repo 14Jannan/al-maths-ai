@@ -6,8 +6,9 @@ export function Account() {
   const navigate = useNavigate();
 
   function handleLogout() {
+    // logout() itself does a hard redirect to '/' — see AuthContext.tsx for
+    // why a plain navigate('/') here used to race ProtectedRoute.
     logout();
-    navigate('/');
   }
 
   return (

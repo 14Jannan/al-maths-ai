@@ -53,8 +53,9 @@ export function Settings() {
   const initials = (letters.slice(0, 2).join('') || '?').toUpperCase();
 
   function handleLogout() {
+    // logout() itself does a hard redirect to '/' — see AuthContext.tsx for
+    // why a plain navigate('/') here used to race ProtectedRoute.
     logout();
-    navigate('/');
   }
 
   return (
