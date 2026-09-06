@@ -99,12 +99,13 @@ Earlier messages in this conversation are provided for context. Refer back to th
         var requestBody = new
         {
             model = visionModel,
+            max_tokens = 800, // stay under Groq's free-tier output-token-per-minute cap
             messages = new object[]
             {
                 new
                 {
                     role = "system",
-                    content = "You transcribe mathematics exam questions from photos. Read the image carefully and output ONLY the exact question text as written, preserving all mathematical notation using LaTeX delimited by \\( ... \\) for inline math or \\[ ... \\] for display math. If there are multiple sub-questions (a), (b), (c) etc., transcribe all of them in order. Do NOT solve the question, do NOT add any explanation, do NOT add commentary \u2014 output only the transcribed question text."
+                    content = "You transcribe mathematics exam questions from photos. Read the image carefully and output ONLY the exact question text as written, preserving all mathematical notation using LaTeX delimited by \\( ... \\) for inline math or \\[ ... \\] for display math. If there are multiple sub-questions (a), (b), (c) etc., transcribe all of them in order. Do NOT solve the question, do NOT add any explanation, do NOT add commentary \u2014 output only the transcribed question text. Keep the transcription concise \u2014 do not repeat the question."
                 },
                 new
                 {
