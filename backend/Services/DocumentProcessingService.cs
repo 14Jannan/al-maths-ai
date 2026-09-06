@@ -55,11 +55,7 @@ public class DocumentProcessingService
         var averageCharsPerPage = text.Trim().Length / (double)pageCount;
         return averageCharsPerPage > 150;
     }
-        public int GetPdfPageCount(Stream pdfStream)
-    {
-        using var document = PdfDocument.Open(pdfStream);
-        return document.NumberOfPages;
-    }
+    
 
     // Converts each page of a scanned PDF into a JPEG image, so it can be
     // sent to the vision model for OCR instead of text extraction.

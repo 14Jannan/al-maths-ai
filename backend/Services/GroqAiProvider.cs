@@ -91,7 +91,7 @@ Earlier messages in this conversation are provided for context. Refer back to th
 
                 return reply ?? string.Empty;
     }
-        public async Task<string> ExtractTextFromImageAsync(string imageUrl)
+    public async Task<string> ExtractTextFromImageAsync(string imageUrl)
     {
         var apiKey = _configuration["Groq:ApiKey"];
         var visionModel = "qwen/qwen3.8-27b";
@@ -118,21 +118,50 @@ Earlier messages in this conversation are provided for context. Refer back to th
             }
         };
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
-        request.Headers.Add("Authorization", $"Bearer {apiKey}");
-        request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.SendAsync(request);
-        var responseBody = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        // Groq's free tier has a per-minute token budget. When processing
+        // many pages back-to-back (e.g. a 69-page scanned PDF), we will hit
+        // that limit partway through. Rather than fail the whole batch,
+        // retry with the wait time the API itself tells us to use.
+        const int maxRetries = 5;
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            throw new Exception($"Groq vision API error ({response.StatusCode}): {responseBody}");
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
+            request.Headers.Add("Authorization", $"Bearer {apiKey}");
+            request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                // Parse "try again in 18.04s" from the error message, or fall back to a fixed wait
+                var waitSeconds = 20.0;
+                var match = System.Text.RegularExpressions.Regex.Match(responseBody, @"try again in ([\d.]+)s");
+                if (match.Success && double.TryParse(match.Groups[1].Value, out var parsed))
+                {
+                    waitSeconds = parsed + 1; // add a 1s safety margin
+                }
+
+                if (attempt == maxRetries)
+                {
+                    throw new Exception($"Groq vision API rate limit persisted after {maxRetries} attempts: {responseBody}");
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(waitSeconds));
+                continue;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Groq vision API error ({response.StatusCode}): {responseBody}");
+            }
+
+            using var doc = JsonDocument.Parse(responseBody);
+            var text = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            return text ?? string.Empty;
         }
 
-        using var doc = JsonDocument.Parse(responseBody);
-        var text = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
-        return text ?? string.Empty;
+        throw new Exception("Unreachable"); // satisfies compiler; loop always returns or throws
     }
 
     public async Task<string> GetVisionCompletionAsync(string imageUrl, string userMessage, string ragContext = "")
