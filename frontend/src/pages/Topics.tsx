@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api';
 
@@ -26,27 +26,6 @@ const PALETTE: [string, string][] = [
   ['#00d2d3', '#01a3a4'],
   ['#ffc048', '#ffa502'],
 ];
-
-const VISITED_KEY = 'al_maths_ai_visited_topics';
-
-function getVisited(): Set<number> {
-  try {
-    const raw = localStorage.getItem(VISITED_KEY);
-    return new Set(raw ? (JSON.parse(raw) as number[]) : []);
-  } catch {
-    return new Set();
-  }
-}
-
-function markVisited(id: number) {
-  try {
-    const visited = getVisited();
-    visited.add(id);
-    localStorage.setItem(VISITED_KEY, JSON.stringify([...visited]));
-  } catch {
-    // localStorage unavailable — visited badges just won't persist, no big deal
-  }
-}
 
 function BranchCard({
   branch,
@@ -85,17 +64,7 @@ function BranchCard({
   );
 }
 
-function RoadmapNode({
-  topic,
-  index,
-  visited,
-  onClick,
-}: {
-  topic: MathTopic;
-  index: number;
-  visited: boolean;
-  onClick: () => void;
-}) {
+function RoadmapNode({ topic, index, onClick }: { topic: MathTopic; index: number; onClick: () => void }) {
   const [bg, ring] = PALETTE[index % PALETTE.length];
   const alignLeft = index % 2 === 0;
   const rotate = index % 2 === 0 ? -3 : 3;
@@ -154,26 +123,6 @@ function RoadmapNode({
           >
             {index + 1}
           </span>
-          {visited && (
-            <span
-              style={{
-                position: 'absolute',
-                bottom: -4,
-                right: -4,
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                background: 'var(--color-success)',
-                color: '#fff',
-                fontSize: 12,
-                display: 'grid',
-                placeItems: 'center',
-                boxShadow: 'var(--shadow-sm)',
-              }}
-            >
-              ✓
-            </span>
-          )}
         </span>
         <span
           style={{
@@ -197,11 +146,11 @@ function RoadmapNode({
 
 function Roadmap({ topics, branch, onBack }: { topics: MathTopic[]; branch: Branch; onBack: () => void }) {
   const navigate = useNavigate();
-  const [visited, setVisited] = useState<Set<number>>(getVisited);
 
   function handleSelect(t: MathTopic) {
-    markVisited(t.id);
-    setVisited(getVisited());
+    // Keep the branch in the URL (see Topics()) so that navigating to
+    // resources and hitting the browser Back button returns here to the
+    // roadmap, not all the way back to the Pure/Applied picker.
     navigate('/resources', { state: { topicId: t.id, topicName: t.name } });
   }
 
@@ -233,7 +182,7 @@ function Roadmap({ topics, branch, onBack }: { topics: MathTopic[]; branch: Bran
         />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
           {topics.map((t, i) => (
-            <RoadmapNode key={t.id} topic={t} index={i} visited={visited.has(t.id)} onClick={() => handleSelect(t)} />
+            <RoadmapNode key={t.id} topic={t} index={i} onClick={() => handleSelect(t)} />
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: 'var(--space-6)', fontSize: 28 }}>🏁</div>
@@ -244,7 +193,19 @@ function Roadmap({ topics, branch, onBack }: { topics: MathTopic[]; branch: Bran
 
 export function Topics() {
   const [query, setQuery] = useState('');
-  const [branch, setBranch] = useState<Branch | null>(null);
+  // Branch lives in the URL, not just component state — so that after
+  // navigating away to a topic's resources, pressing the browser Back
+  // button restores the roadmap you were on instead of dropping you back
+  // at the Pure/Applied picker (a fresh mount would otherwise always start
+  // with branch = null).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const branchParam = searchParams.get('branch');
+  const branch: Branch | null = branchParam === 'Pure' || branchParam === 'Applied' ? branchParam : null;
+
+  function setBranch(next: Branch | null) {
+    if (next) setSearchParams({ branch: next });
+    else setSearchParams({});
+  }
 
   const { data: topics, isLoading } = useQuery({
     queryKey: ['mathTopics'],
