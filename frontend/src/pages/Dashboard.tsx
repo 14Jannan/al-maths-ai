@@ -99,7 +99,7 @@ export function Dashboard() {
                   style={{
                     height: '100%',
                     width: `${Math.min(100, ((usage?.used ?? 0) / (usage?.limit ?? 10)) * 100)}%`,
-                    background: 'var(--color-accent)',
+                    background: 'linear-gradient(to right, var(--chart-series-3), var(--chart-series-4))',
                   }}
                 />
               </div>
@@ -128,11 +128,17 @@ export function Dashboard() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(215px,1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-        {(topics ?? []).slice(0, 4).map((t) => (
+        {(topics ?? []).slice(0, 4).map((t, i) => (
           <div
             key={t.id}
             className="card"
-            style={{ padding: 'var(--space-4)', gap: 'var(--space-3)', cursor: 'pointer', transition: 'border-color 0.15s' }}
+            style={{
+              padding: 'var(--space-4)',
+              gap: 'var(--space-3)',
+              cursor: 'pointer',
+              transition: 'border-color 0.15s',
+              borderTop: `3px solid var(--chart-series-${(i % 8) + 1})`,
+            }}
             onClick={() => navigate('/tutor', { state: { topic: t.name } })}
           >
             <div style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>{t.name}</div>
@@ -147,18 +153,18 @@ export function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 'var(--space-3)' }}>
         <button
           className="card"
-          style={{ padding: 'var(--space-4)', textAlign: 'left', cursor: 'pointer', border: 'none' }}
+          style={{ padding: 'var(--space-4)', textAlign: 'left', cursor: 'pointer', border: 'none', borderLeft: '3px solid var(--chart-series-4)' }}
           onClick={() => navigate('/papers')}
         >
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 15 }}>Past papers</div>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 15 }}>📄 Past papers</div>
           <div style={{ fontSize: 12, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>Practice by year & difficulty</div>
         </button>
         <button
           className="card"
-          style={{ padding: 'var(--space-4)', textAlign: 'left', cursor: 'pointer', border: 'none' }}
+          style={{ padding: 'var(--space-4)', textAlign: 'left', cursor: 'pointer', border: 'none', borderLeft: '3px solid var(--chart-series-6)' }}
           onClick={() => navigate('/resources')}
         >
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 15 }}>Resources</div>
+          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 15 }}>🎬 Resources</div>
           <div style={{ fontSize: 12, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>Curated videos & notes</div>
         </button>
       </div>
