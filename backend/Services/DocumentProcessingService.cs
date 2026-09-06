@@ -43,9 +43,15 @@ public class DocumentProcessingService
         return chunks;
     }
 
-    // A PDF with a real text layer returns substantial text; a scanned PDF
-    // returns empty or near-empty text (PdfPig can't read pixels).
-        // A real text layer produces substantial text on EVERY page. A PDF
+    // Total page count — used alongside the extracted text to compute
+    // average text density per page (see HasExtractableText below).
+    public int GetPdfPageCount(Stream pdfStream)
+    {
+        using var document = PdfDocument.Open(pdfStream);
+        return document.NumberOfPages;
+    }
+
+    // A real text layer produces substantial text on EVERY page. A PDF
     // whose only "text" is a thin watermark stamped over scanned images
     // (common with tools like A-PDF Watermark) will pass a simple
     // "any text at all?" check but fail this average-density check.
@@ -55,7 +61,6 @@ public class DocumentProcessingService
         var averageCharsPerPage = text.Trim().Length / (double)pageCount;
         return averageCharsPerPage > 150;
     }
-    
 
     // Converts each page of a scanned PDF into a JPEG image, so it can be
     // sent to the vision model for OCR instead of text extraction.
