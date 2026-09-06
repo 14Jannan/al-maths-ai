@@ -110,16 +110,27 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         boxSizing: 'border-box',
       }}
     >
-      <Link
-        to="/dashboard"
-        onClick={onNavigate}
-        style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', padding: '4px 6px', marginBottom: 'var(--space-6)' }}
-      >
-        <span style={{ width: 22, height: 22, border: '1px solid var(--color-accent)', borderRadius: 6, display: 'grid', placeItems: 'center', fontSize: 12, color: 'var(--color-accent)', fontWeight: 600 }}>
-          i
-        </span>
-        <span style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>iMath</span>
-      </Link>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 9, marginBottom: 'var(--space-6)' }}>
+        <Link
+          to="/dashboard"
+          onClick={onNavigate}
+          style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', padding: '4px 6px', minWidth: 0 }}
+        >
+          <span style={{ width: 22, height: 22, border: '1px solid var(--color-accent)', borderRadius: 6, display: 'grid', placeItems: 'center', fontSize: 12, color: 'var(--color-accent)', fontWeight: 600, flexShrink: 0 }}>
+            i
+          </span>
+          <span style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>iMath</span>
+        </Link>
+        <button
+          className="btn btn-danger btn-icon"
+          style={{ fontSize: 14, flexShrink: 0 }}
+          onClick={handleLogout}
+          title="Log out"
+          aria-label="Log out"
+        >
+          🚪
+        </button>
+      </div>
       <div style={{ marginBottom: 'var(--space-4)' }}>
         <GlobalSearch />
       </div>
@@ -340,22 +351,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </nav>
 
-      {/* Compact account footer — plan status links straight to pricing,
-          profile row links to account, logout is its own explicit action */}
+      {/* Compact account footer — profile row links to account, upgrade is
+          the closing action (logout moved up next to the iMath brand) */}
       <div style={{ borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-3)', marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: 0 }}>
-        {!isPremium && (
-          <button
-            className="btn btn-success"
-            style={{ fontSize: 12.5, padding: '6px 10px' }}
-            onClick={() => {
-              navigate('/pricing');
-              onNavigate?.();
-            }}
-          >
-            Upgrade
-          </button>
-        )}
-
         <button
           onClick={() => {
             navigate('/account');
@@ -386,9 +384,18 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </span>
         </button>
 
-        <button className="btn btn-danger" style={{ fontSize: 12 }} onClick={handleLogout}>
-          Log out
-        </button>
+        {!isPremium && (
+          <button
+            className="btn btn-success"
+            style={{ fontSize: 12.5, padding: '6px 10px' }}
+            onClick={() => {
+              navigate('/pricing');
+              onNavigate?.();
+            }}
+          >
+            Upgrade
+          </button>
+        )}
       </div>
     </div>
   );
