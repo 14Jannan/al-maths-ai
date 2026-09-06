@@ -198,6 +198,9 @@ function PapersAdmin() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedImageUrl, setExtractedImageUrl] = useState<string | null>(null);
+  const [bulkJson, setBulkJson] = useState('');
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
 
   const createPaper = useMutation({
     mutationFn: (dto: typeof form) => apiFetch<PastPaper>('/api/PastPapers', { method: 'POST', body: JSON.stringify(dto) }),
@@ -207,6 +210,31 @@ function PapersAdmin() {
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Failed to create question'),
   });
+
+  // Each item computes its own embedding server-side (same as single Create)
+  // — this is what actually makes newly-imported questions show up in the
+  // AI Tutor's "related past paper" grounding.
+  const bulkImport = useMutation({
+    mutationFn: (items: unknown[]) => apiFetch<{ added: number }>('/api/PastPapers/bulk', { method: 'POST', body: JSON.stringify(items) }),
+    onSuccess: (res) => {
+      setBulkResult(`${res.added} questions imported.`);
+      setBulkJson('');
+      queryClient.invalidateQueries({ queryKey: ['pastPapers'] });
+    },
+    onError: (err) => setBulkError(err instanceof ApiError ? err.message : 'Import failed'),
+  });
+
+  function handleBulkSubmit() {
+    setBulkError(null);
+    setBulkResult(null);
+    try {
+      const parsed = JSON.parse(bulkJson);
+      if (!Array.isArray(parsed)) throw new Error('Must be a JSON array');
+      bulkImport.mutate(parsed);
+    } catch (e) {
+      setBulkError(e instanceof Error ? e.message : 'Invalid JSON');
+    }
+  }
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -251,6 +279,28 @@ function PapersAdmin() {
 
   return (
     <div>
+      {/* Bulk import — paste a JSON array of questions here. Each item needs
+          year/paper/questionNumber/questionText/answer/explanation/
+          difficulty/language/mathTopicId; embeddings are computed
+          server-side, same as adding one at a time. */}
+      <div style={{ marginBottom: 'var(--space-8)' }}>
+        <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 6 }}>Bulk import (JSON array)</label>
+        <textarea
+          className="input"
+          style={{ minHeight: 120, fontFamily: 'monospace', fontSize: 12.5 }}
+          value={bulkJson}
+          onChange={(e) => setBulkJson(e.target.value)}
+          placeholder='[{"year":2023,"paper":"Paper I","questionNumber":"5(a)","questionText":"...","answer":"...","explanation":"...","difficulty":"Medium","language":"English","mathTopicId":1}]'
+        />
+        <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginTop: 8 }}>
+          <button className="btn btn-primary" onClick={handleBulkSubmit} disabled={!bulkJson.trim() || bulkImport.isPending}>
+            {bulkImport.isPending ? 'Importing…' : 'Import all'}
+          </button>
+          {bulkError && <span style={{ fontSize: 12.5, color: 'var(--color-neutral-300)' }}>{bulkError}</span>}
+          {bulkResult && <span style={{ fontSize: 12.5, color: 'var(--color-accent)' }}>{bulkResult}</span>}
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
         <div style={{ marginBottom: 'var(--space-6)', padding: 'var(--space-4)', border: '1px dashed color-mix(in srgb, var(--color-text) 25%, transparent)', borderRadius: 'var(--radius-md)' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>Upload a question photo (optional)</div>

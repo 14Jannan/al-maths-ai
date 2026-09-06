@@ -250,9 +250,61 @@ public class ChatController : ControllerBase
 
         _context.ChatMessages.Add(new ChatMessage { ChatConversationId = conversation.Id, Role = "user", Content = userContent });
 
+        // Same RAG grounding as the text flow, just keyed off the image's
+        // transcribed text instead of typed text — there's no user-typed
+        // question to embed otherwise (the caption is often empty). A
+        // failure here (transcription or embedding search) just means no
+        // extra grounding, never a failed response.
+        var relatedPapers = new List<RelatedPastPaperDto>();
+        var relatedResources = new List<RelatedResourceDto>();
+        var ragContext = string.Empty;
         try
         {
-            var reply = await _aiProvider.GetVisionCompletionAsync(imageUrl, message ?? string.Empty);
+            var extractedText = await _aiProvider.ExtractTextFromImageAsync(imageUrl);
+            var searchText = string.IsNullOrWhiteSpace(extractedText) ? (message ?? string.Empty) : extractedText;
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                var syllabusContext = await _syllabusService.GetRelevantSyllabusContextAsync(searchText);
+
+                var questionEmbedding = await _embeddingService.GetEmbeddingAsync(searchText, "search_query");
+                var questionVector = new Pgvector.Vector(questionEmbedding);
+
+                var closestPapers = await _context.PastPapers
+                    .Where(p => p.Embedding != null)
+                    .OrderBy(p => p.Embedding!.CosineDistance(questionVector))
+                    .Take(2)
+                    .Select(p => new { p.Id, p.Year, p.Paper, p.QuestionNumber, p.QuestionText, p.Answer, p.Explanation })
+                    .ToListAsync();
+
+                relatedPapers = closestPapers
+                    .Select(p => new RelatedPastPaperDto { Id = p.Id, Year = p.Year, Paper = p.Paper, QuestionNumber = p.QuestionNumber })
+                    .ToList();
+
+                relatedResources = await _context.Resources
+                    .Where(r => r.Embedding != null)
+                    .OrderBy(r => r.Embedding!.CosineDistance(questionVector))
+                    .Take(2)
+                    .Select(r => new RelatedResourceDto { Id = r.Id, Title = r.Title, Url = r.Url, SourceType = r.SourceType })
+                    .ToListAsync();
+
+                ragContext = syllabusContext;
+                if (closestPapers.Count > 0)
+                {
+                    var pastPaperReferenceContext = string.Join("\n\n", closestPapers.Select(p =>
+                        $"- {p.Year} {p.Paper} Q{p.QuestionNumber}: \"{p.QuestionText}\"\n  Marking scheme answer: {p.Answer}\n  Explanation: {p.Explanation}"));
+                    ragContext += $"\n\nPAST PAPER REFERENCE (real questions with their official marking-scheme answers — cite one explicitly if it closely matches, and mirror its step/mark structure):\n{pastPaperReferenceContext}";
+                }
+            }
+        }
+        catch
+        {
+            // Grounding is a bonus, not the point of the response.
+        }
+
+        try
+        {
+            var reply = await _aiProvider.GetVisionCompletionAsync(imageUrl, message ?? string.Empty, ragContext);
 
             _context.ChatMessages.Add(new ChatMessage { ChatConversationId = conversation.Id, Role = "ai", Content = reply });
             conversation.UpdatedAt = DateTime.UtcNow;
@@ -270,7 +322,7 @@ public class ChatController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            return Ok(new ImageChatResponseDto { Reply = reply, ImageUrl = imageUrl, ConversationId = conversation.Id });
+            return Ok(new ImageChatResponseDto { Reply = reply, ImageUrl = imageUrl, ConversationId = conversation.Id, RelatedPastPapers = relatedPapers, RelatedResources = relatedResources });
         }
         catch (Exception ex)
         {

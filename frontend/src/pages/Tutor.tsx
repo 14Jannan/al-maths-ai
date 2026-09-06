@@ -138,13 +138,28 @@ export function Tutor() {
       formData.append('message', draft);
       if (conversationId) formData.append('conversationId', String(conversationId));
 
-      const result = await apiFetch<{ reply: string; imageUrl: string; conversationId: number }>('/api/Chat/image', {
+      const result = await apiFetch<{
+        reply: string;
+        imageUrl: string;
+        conversationId: number;
+        relatedPastPapers: RelatedPastPaper[];
+        relatedResources: RelatedResource[];
+      }>('/api/Chat/image', {
         method: 'POST',
         body: formData,
       });
 
       setDraft('');
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'ai', text: result.reply }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'ai',
+          text: result.reply,
+          relatedPastPapers: result.relatedPastPapers,
+          relatedResources: result.relatedResources,
+        },
+      ]);
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['chatUsage'] });
 

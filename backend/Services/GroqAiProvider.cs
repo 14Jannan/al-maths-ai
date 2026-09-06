@@ -135,17 +135,25 @@ Earlier messages in this conversation are provided for context. Refer back to th
         return text ?? string.Empty;
     }
 
-    public async Task<string> GetVisionCompletionAsync(string imageUrl, string userMessage)
+    public async Task<string> GetVisionCompletionAsync(string imageUrl, string userMessage, string ragContext = "")
     {
         var apiKey = _configuration["Groq:ApiKey"];
         var visionModel = "qwen/qwen3.8-27b";
+
+        var systemPrompt = "You are the iMath AI tutor for Sri Lankan A/L Combined Mathematics students. A student has uploaded a photo of a question. Read the question from the image carefully, then solve it using the standard A/L method, showing full working. If the image is unclear or not a maths question, say so clearly instead of guessing."
+            + " Write every formula using LaTeX delimited by \\( ... \\) for inline math or \\[ ... \\] for standalone display math."
+            + " MARKING SCHEME FORMAT: for a specific solvable problem, break the working into the same step units a Sri Lankan A/L marker would award — M1 for a correct method/setup step, A1 for a correct accuracy/simplification step, B1 for a stated fact used without derivation — labelling each step inline (e.g. 'Step 1 (M1): ...'), and mark the final answer clearly.";
+        if (!string.IsNullOrWhiteSpace(ragContext))
+        {
+            systemPrompt += $"\n\n{ragContext}\n\nIf a PAST PAPER REFERENCE above closely matches this question, mention which paper/question it is and mirror its marking-scheme structure.";
+        }
 
         var requestBody = new
         {
             model = visionModel,
             messages = new object[]
             {
-                new { role = "system", content = "You are the iMath AI tutor for Sri Lankan A/L Combined Mathematics students. A student has uploaded a photo of a question. Read the question from the image carefully, then solve it using the standard A/L method, showing full working. If the image is unclear or not a maths question, say so clearly instead of guessing." },
+                new { role = "system", content = systemPrompt },
                 new
                 {
                     role = "user",
