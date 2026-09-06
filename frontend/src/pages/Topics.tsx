@@ -68,12 +68,63 @@ function RoadmapNode({ topic, index, onClick }: { topic: MathTopic; index: numbe
   const [bg, ring] = PALETTE[index % PALETTE.length];
   const alignLeft = index % 2 === 0;
   const rotate = index % 2 === 0 ? -3 : 3;
+  const [hovered, setHovered] = useState(false);
+
+  // Some topics' description is just a placeholder equal to their own
+  // name (no real sub-topics recorded yet) — nothing useful to show then.
+  const subtopics = topic.description
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const hasSubtopics = !(subtopics.length === 1 && subtopics[0].toLowerCase() === topic.name.toLowerCase());
 
   return (
-    <div style={{ display: 'flex', width: '100%', justifyContent: alignLeft ? 'flex-start' : 'flex-end', position: 'relative', zIndex: 1 }}>
+    <div
+      style={{ display: 'flex', width: '100%', justifyContent: alignLeft ? 'flex-start' : 'flex-end', position: 'relative', zIndex: hovered ? 20 : 1 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {hovered && hasSubtopics && (
+        <div
+          role="tooltip"
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 8px)',
+            left: alignLeft ? `calc(6% + 0px)` : 'auto',
+            right: alignLeft ? 'auto' : `calc(6% + 0px)`,
+            width: 220,
+            background: 'var(--color-surface)',
+            boxShadow: 'var(--shadow-lg)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-3)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
+          <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>
+            Sub-topics
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            {subtopics.map((s) => (
+              <span
+                key={s}
+                style={{
+                  fontSize: 11.5,
+                  padding: '3px 9px',
+                  borderRadius: 999,
+                  background: `linear-gradient(135deg, ${bg}, ${ring})`,
+                  color: '#fff',
+                }}
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       <button
         onClick={onClick}
-        title={topic.description}
         style={{
           cursor: 'pointer',
           border: 'none',

@@ -97,9 +97,65 @@ public class ChatController : ControllerBase
             Content = dto.Message
         });
 
+        // Semantic search — embeddings catch related meaning even when the
+        // exact words differ (e.g. a "rate of change" question still
+        // matches a "differentiation" past paper question and a
+        // "Differentiation basics" video). Done BEFORE the AI call (not
+        // just after, for the UI links) so the top matching past paper's
+        // real question + marking-scheme answer can ground the model's own
+        // reply — the point of the MARKING SCHEME FORMAT rule in the
+        // prompt. A failure here (e.g. the embedding API is briefly down)
+        // shouldn't sink an otherwise-successful reply, so it's isolated
+        // from the outer try/catch that guards the AI call itself.
+        var relatedPapers = new List<RelatedPastPaperDto>();
+        var relatedResources = new List<RelatedResourceDto>();
+        var pastPaperReferenceContext = string.Empty;
+        try
+        {
+            var questionEmbedding = await _embeddingService.GetEmbeddingAsync(dto.Message, "search_query");
+            var questionVector = new Pgvector.Vector(questionEmbedding);
+
+            // Full Q&A for the closest couple of matches — this is what
+            // actually gets fed to the model as grounding, not just the
+            // Id/Year/Paper shown as a link.
+            var closestPapers = await _context.PastPapers
+                .Where(p => p.Embedding != null)
+                .OrderBy(p => p.Embedding!.CosineDistance(questionVector))
+                .Take(2)
+                .Select(p => new { p.Id, p.Year, p.Paper, p.QuestionNumber, p.QuestionText, p.Answer, p.Explanation })
+                .ToListAsync();
+
+            relatedPapers = closestPapers
+                .Select(p => new RelatedPastPaperDto { Id = p.Id, Year = p.Year, Paper = p.Paper, QuestionNumber = p.QuestionNumber })
+                .ToList();
+
+            if (closestPapers.Count > 0)
+            {
+                pastPaperReferenceContext = string.Join("\n\n", closestPapers.Select(p =>
+                    $"- {p.Year} {p.Paper} Q{p.QuestionNumber}: \"{p.QuestionText}\"\n  Marking scheme answer: {p.Answer}\n  Explanation: {p.Explanation}"));
+            }
+
+            relatedResources = await _context.Resources
+                .Where(r => r.Embedding != null)
+                .OrderBy(r => r.Embedding!.CosineDistance(questionVector))
+                .Take(2)
+                .Select(r => new RelatedResourceDto { Id = r.Id, Title = r.Title, Url = r.Url, SourceType = r.SourceType })
+                .ToListAsync();
+        }
+        catch
+        {
+            // Related content is a bonus, not the point of the response —
+            // fall through with whatever lists were already built rather
+            // than failing the chat.
+        }
+
         try
         {
             var syllabusContext = await _syllabusService.GetRelevantSyllabusContextAsync(dto.Message);
+            if (!string.IsNullOrWhiteSpace(pastPaperReferenceContext))
+            {
+                syllabusContext += $"\n\nPAST PAPER REFERENCE (real questions with their official marking-scheme answers — cite one explicitly if it closely matches, and mirror its step/mark structure):\n{pastPaperReferenceContext}";
+            }
             var reply = await _aiProvider.GetCompletionAsync(recentHistory, dto.Message, syllabusContext);
 
             _context.ChatMessages.Add(new ChatMessage
@@ -119,43 +175,6 @@ public class ChatController : ControllerBase
                     _context.ChatUsages.Add(usage);
                 }
                 usage.Count += 1;
-            }
-            // Suggest real, existing past paper questions and admin-curated
-            // resources related to this question — never AI-generated, so
-            // these are always accurate and never hallucinated. A failure
-            // here (e.g. the embedding API is briefly down) shouldn't sink
-            // an otherwise-successful reply, so it's isolated from the outer
-            // try/catch that guards the AI call itself.
-            var relatedPapers = new List<RelatedPastPaperDto>();
-            var relatedResources = new List<RelatedResourceDto>();
-            try
-            {
-                // Semantic search — embeddings catch related meaning even
-                // when the exact words differ (e.g. a "rate of change"
-                // question still matches a "differentiation" past paper
-                // question and a "Differentiation basics" video).
-                var questionEmbedding = await _embeddingService.GetEmbeddingAsync(dto.Message, "search_query");
-                var questionVector = new Pgvector.Vector(questionEmbedding);
-
-                relatedPapers = await _context.PastPapers
-                    .Where(p => p.Embedding != null)
-                    .OrderBy(p => p.Embedding!.CosineDistance(questionVector))
-                    .Take(3)
-                    .Select(p => new RelatedPastPaperDto { Id = p.Id, Year = p.Year, Paper = p.Paper, QuestionNumber = p.QuestionNumber })
-                    .ToListAsync();
-
-                relatedResources = await _context.Resources
-                    .Where(r => r.Embedding != null)
-                    .OrderBy(r => r.Embedding!.CosineDistance(questionVector))
-                    .Take(2)
-                    .Select(r => new RelatedResourceDto { Id = r.Id, Title = r.Title, Url = r.Url, SourceType = r.SourceType })
-                    .ToListAsync();
-            }
-            catch
-            {
-                // Related content is a bonus, not the point of the response —
-                // fall through with whatever lists were already built rather
-                // than failing the chat.
             }
 
             await _context.SaveChangesAsync();

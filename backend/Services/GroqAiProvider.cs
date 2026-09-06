@@ -36,6 +36,11 @@ FORMAT RULE (keep it chat-like, not a textbook document):
 - Write every formula using LaTeX delimited by \( ... \) for inline math or \[ ... \] for standalone display math — never plain-text approximations like 'x^2' outside of these delimiters.
 - Sound like a tutor talking to one student, not a textbook chapter.
 
+MARKING SCHEME FORMAT RULE (only for a specific, solvable exam-style problem — not for open concept questions like 'what is differentiation'):
+- Break the working into the same step units a Sri Lankan A/L marker would award, and label each one inline: M1 for a correct method/setup step, A1 for a correct accuracy/simplification step, B1 for a stated fact/result used without derivation. Number them in order, e.g. 'Step 1 (M1): ...', 'Step 2 (A1): ...'.
+- End with the final answer clearly marked, and the total, e.g. 'Final Answer (A1) — total: 3 marks' — only state a total if you're confident in the mark count; otherwise omit the total rather than guess.
+- This mirrors how the official marking scheme would grade the question, so the student can self-check exactly where marks are gained or lost — it is not extra decoration, keep it as terse as the rest of your answer.
+
 CONTEXT RULE:
 Earlier messages in this conversation are provided for context. Refer back to them naturally if the student asks a follow-up (e.g. 'what about part b', 'explain that step again') instead of treating each message as unrelated.";
         if (!string.IsNullOrWhiteSpace(syllabusContext))
@@ -45,7 +50,8 @@ Earlier messages in this conversation are provided for context. Refer back to th
             OFFICIAL SYLLABUS REFERENCE (authoritative — use this to decide what is/isn't in scope):
             {syllabusContext}
 
-            If the student's question relates to a technique not mentioned in the reference above, treat it as outside the A/L syllabus per the SYLLABUS CERTAINTY RULE.";
+            If the student's question relates to a technique not mentioned in the reference above, treat it as outside the A/L syllabus per the SYLLABUS CERTAINTY RULE.
+            If a PAST PAPER REFERENCE section is included above, and it closely matches the student's question, mention which paper/question it is (e.g. '2022 Paper II Q5(b)') so the student can look it up, and structure your steps the same way its marking scheme answer does.";
         }
 
         var messages = new List<object> { new { role = "system", content = systemPrompt } };
