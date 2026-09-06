@@ -52,7 +52,7 @@ public class DocumentsController : ControllerBase
 
     [HttpPost("upload")]
     [RequestSizeLimit(150_000_000)] // scanned PDFs can be large (90MB+)
-    public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromForm] int? topicId)
+    public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromForm] int? topicId, [FromForm] int startPage = 0, [FromForm] int? endPage = null)
     {
         if (file == null || file.Length == 0)
         {
@@ -63,7 +63,7 @@ public class DocumentsController : ControllerBase
             return BadRequest("Only PDF files are supported");
         }
 
-                string extractedText;
+        string extractedText;
         int pageCount;
         using (var stream = file.OpenReadStream())
         {
@@ -74,70 +74,89 @@ public class DocumentsController : ControllerBase
             pageCount = _processingService.GetPdfPageCount(stream);
         }
 
-        List<string> chunks;
+        int chunksCreated = 0;
+        string? stoppedReason = null;
 
         if (_processingService.HasExtractableText(extractedText, pageCount))
         {
-            // Normal path: PDF has a real text layer
-            chunks = _processingService.ChunkText(extractedText);
+            // Normal path: real text layer
+            var chunks = _processingService.ChunkText(extractedText);
+            for (int i = 0; i < chunks.Count; i++)
+            {
+                var embedding = await _embeddingService.GetEmbeddingAsync(chunks[i], "search_document");
+                _context.DocumentChunks.Add(new DocumentChunk
+                {
+                    SourceTitle = file.FileName, ChunkText = chunks[i], ChunkIndex = i,
+                    MathTopicId = topicId, Embedding = new Pgvector.Vector(embedding)
+                });
+                await _context.SaveChangesAsync(); // save immediately, one chunk at a time
+                chunksCreated++;
+            }
         }
         else
         {
-            // Fallback path: scanned PDF, no text layer — OCR each page via vision AI
+            // OCR fallback path: scanned PDF, process page-by-page, saving as we go.
+            // startPage/endPage let an admin resume a large document across multiple
+            // days if a daily API quota is hit partway through.
             using var stream = file.OpenReadStream();
             var pageImages = await _processingService.RasterizePdfPagesAsync(stream);
 
-            chunks = new List<string>();
-            foreach (var pageBytes in pageImages)
-            {
-                using var pageStream = new MemoryStream(pageBytes);
-                var pageFileName = $"{Guid.NewGuid()}.jpg";
-                var pageImageUrl = await _storageService.UploadDocumentAsync("syllabus-documents", pageFileName, pageStream, "image/jpeg");
+            var lastPage = Math.Min(endPage ?? pageImages.Count, pageImages.Count);
 
-                var pageText = await _aiProvider.ExtractTextFromImageAsync(pageImageUrl);
+            for (int i = startPage; i < lastPage; i++)
+            {
+                string pageText;
+                try
+                {
+                    using var pageStream = new MemoryStream(pageImages[i]);
+                    var pageFileName = $"{Guid.NewGuid()}.jpg";
+                    var pageImageUrl = await _storageService.UploadDocumentAsync("syllabus-documents", pageFileName, pageStream, "image/jpeg");
+                    pageText = await _aiProvider.ExtractTextFromImageAsync(pageImageUrl);
+                }
+                catch (Exception ex) when (ex.Message.Contains("tokens per day") || ex.Message.Contains("TPD"))
+                {
+                    // Daily quota exhausted — stop here, but keep everything saved so far.
+                    // Report exactly which page to resume from tomorrow.
+                    stoppedReason = $"Daily AI quota reached at page {i + 1} of {pageImages.Count}. " +
+                                     $"Resume tomorrow using startPage={i} for this same file.";
+                    break;
+                }
+
                 if (!string.IsNullOrWhiteSpace(pageText) && pageText.Trim().Length > 20)
                 {
-                    chunks.Add(pageText);
+                    var embedding = await _embeddingService.GetEmbeddingAsync(pageText, "search_document");
+                    _context.DocumentChunks.Add(new DocumentChunk
+                    {
+                        SourceTitle = file.FileName, ChunkText = pageText, ChunkIndex = i,
+                        MathTopicId = topicId, Embedding = new Pgvector.Vector(embedding)
+                    });
+                    await _context.SaveChangesAsync(); // save this page immediately
+                    chunksCreated++;
                 }
             }
         }
 
-        if (chunks.Count == 0)
+        if (chunksCreated == 0 && stoppedReason == null)
         {
-            return BadRequest("No usable text could be extracted from this PDF, even with OCR. The scan quality may be too low.");
+            return BadRequest("No usable text could be extracted from this PDF, even with OCR.");
         }
 
-        // Backup the raw file in Supabase Storage
-        try
+        // Backup the raw file (best-effort, only on the first call for this file)
+        if (startPage == 0)
         {
-            using var uploadStream = file.OpenReadStream();
-            var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-            await _storageService.UploadDocumentAsync("syllabus-documents", fileName, uploadStream, "application/pdf");
-        }
-        catch
-        {
-            // Non-fatal: the searchable chunks are what matter for the AI;
-            // losing the raw backup shouldn't block the upload.
-        }
-
-        var chunkEntities = new List<DocumentChunk>();
-        for (int i = 0; i < chunks.Count; i++)
-        {
-            var embedding = await _embeddingService.GetEmbeddingAsync(chunks[i], "search_document");
-            chunkEntities.Add(new DocumentChunk
+            try
             {
-                SourceTitle = file.FileName,
-                ChunkText = chunks[i],
-                ChunkIndex = i,
-                MathTopicId = topicId,
-                Embedding = new Pgvector.Vector(embedding)
-            });
+                using var uploadStream = file.OpenReadStream();
+                var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                await _storageService.UploadDocumentAsync("syllabus-documents", fileName, uploadStream, "application/pdf");
+            }
+            catch
+            {
+                // Non-fatal — the searchable chunks matter more than the raw backup
+            }
         }
 
-        _context.DocumentChunks.AddRange(chunkEntities);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { sourceTitle = file.FileName, chunksCreated = chunkEntities.Count });
+        return Ok(new { sourceTitle = file.FileName, chunksCreated, stoppedReason });
     }
 
     [HttpDelete("{sourceTitle}")]

@@ -522,6 +522,7 @@ function DocumentsAdmin() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [startPage, setStartPage] = useState(0);
 
   const { data: documents, isLoading } = useQuery({
     queryKey: ['documents'],
@@ -541,12 +542,18 @@ function DocumentsAdmin() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await apiFetch<{ sourceTitle: string; chunksCreated: number }>('/api/Documents/upload', {
+      formData.append('startPage', String(startPage));
+      const res = await apiFetch<{ sourceTitle: string; chunksCreated: number; stoppedReason: string | null }>('/api/Documents/upload', {
         method: 'POST',
         body: formData,
       });
-      setResult(`"${res.sourceTitle}" processed — ${res.chunksCreated} chunks indexed.`);
-      setFile(null);
+      if (res.stoppedReason) {
+        setResult(`${res.chunksCreated} pages saved this run. ${res.stoppedReason}`);
+      } else {
+        setResult(`"${res.sourceTitle}" processed — ${res.chunksCreated} chunks indexed.`);
+        setFile(null);
+        setStartPage(0);
+      }
       queryClient.invalidateQueries({ queryKey: ['documents'] });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Upload failed');
@@ -560,6 +567,21 @@ function DocumentsAdmin() {
       <p style={{ fontSize: 13, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)', marginBottom: 'var(--space-4)' }}>
         Upload a PDF (notes, textbook chapter, etc.) — it will be split into searchable chunks the AI tutor can reference alongside the official syllabus.
       </p>
+
+      <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
+        <label style={{ fontSize: 12.5 }}>Resume from page:</label>
+        <input
+          className="input"
+          type="number"
+          style={{ width: 80 }}
+          value={startPage}
+          onChange={(e) => setStartPage(Number(e.target.value))}
+          min={0}
+        />
+        <span style={{ fontSize: 11.5, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>
+          (0 = from the start; use the number shown after a quota stop)
+        </span>
+      </div>
 
       <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
         <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
