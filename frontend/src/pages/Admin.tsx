@@ -306,6 +306,7 @@ function PapersAdmin() {
           </p>
           <input
             ref={fileInputRef}
+            className="file-input-photo"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handlePhotoUpload}
@@ -579,7 +580,7 @@ function DocumentsAdmin() {
       </div>
 
       <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-        <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        <input className="file-input-pdf" type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         <button className="btn btn-primary" onClick={handleUpload} disabled={!file || isUploading}>
           {isUploading ? 'Processing…' : 'Upload & Index'}
         </button>
@@ -815,7 +816,7 @@ const CHART_SERIES = [
 
 function ChartCard({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
-    <div className="card" style={{ padding: 'var(--space-4)', gap: 4 }}>
+    <div className="card" style={{ padding: 'var(--space-4)', gap: 4, overflow: 'visible' }}>
       <div style={{ fontSize: 13, fontWeight: 500 }}>{title}</div>
       <div style={{ fontSize: 12, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 'var(--space-3)' }}>{subtitle}</div>
       {children}
@@ -858,6 +859,8 @@ function UserGrowthChart({ data }: { data: UserGrowthPoint[] }) {
             contentStyle={tooltipStyle}
             labelFormatter={(d) => String(d)}
             formatter={(value) => [String(value), 'Total users']}
+            allowEscapeViewBox={{ x: true, y: true }}
+            cursor={{ stroke: 'var(--chart-axis)', strokeDasharray: '3 3' }}
           />
           <Area type="monotone" dataKey="cumulativeUsers" name="Total users" stroke="var(--chart-series-1)" strokeWidth={2} fill="url(#userGrowthFill)" dot={false} />
         </AreaChart>
@@ -898,7 +901,7 @@ function MostAskedTopicsChart({ data }: { data: TopicUsage[] }) {
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip contentStyle={tooltipStyle} formatter={(value) => [String(value), 'Mentions']} />
+          <Tooltip contentStyle={tooltipStyle} formatter={(value) => [String(value), 'Mentions']} allowEscapeViewBox={{ x: true, y: true }} cursor={{ fill: 'color-mix(in srgb, var(--color-text) 6%, transparent)' }} />
           <Bar dataKey="mentionCount" name="Mentions" radius={[0, 4, 4, 0]} maxBarSize={18}>
             {chartData.map((_, i) => (
               // Original (unreversed) rank picks the color slot, so topic #1
@@ -944,7 +947,7 @@ function FreeVsPremiumChart({ freeUsers, premiumUsers }: { freeUsers: number; pr
             >
               {pieData.map((d) => <Cell key={d.name} fill={d.fill} />)}
             </Pie>
-            <Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [String(value), String(name)]} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [String(value), String(name)]} allowEscapeViewBox={{ x: true, y: true }} />
             <Legend verticalAlign="bottom" height={24} wrapperStyle={{ fontSize: 12 }} />
           </PieChart>
         </ResponsiveContainer>
