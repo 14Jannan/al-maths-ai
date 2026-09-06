@@ -14,6 +14,22 @@ const navItems = [
   { to: '/settings', label: 'Settings' },
 ];
 
+// Shown instead of navItems while inside /admin — the admin section's own
+// sub-pages (previously an in-page horizontal tab bar in Admin.tsx) become
+// real sidebar links here, so they're reachable/bookmarkable the same way
+// every other page in the app is.
+const adminNavItems = [
+  { to: '/admin', label: 'Overview' },
+  { to: '/admin/users', label: 'Users' },
+  { to: '/admin/topics', label: 'Topics' },
+  { to: '/admin/papers', label: 'Papers' },
+  { to: '/admin/resources', label: 'Resources' },
+  { to: '/admin/documents', label: 'Documents' },
+  { to: '/admin/exampapers', label: 'Exam Papers' },
+  { to: '/tutor', label: 'AI Tutor' },
+  { to: '/settings', label: 'Settings' },
+];
+
 function groupConversations(conversations: ConversationSummary[]) {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -46,6 +62,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { email, isAdmin, logout } = useAuth();
 
   const onTutorRoute = location.pathname.startsWith('/tutor');
+  const isAdminContext = location.pathname.startsWith('/admin');
   const activeConversationId = params.conversationId ? Number(params.conversationId) : null;
 
   const [tutorOpen, setTutorOpen] = useState(onTutorRoute);
@@ -149,6 +166,27 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           paddingRight: 4,
         }}
       >
+        {isAdminContext ? (
+          adminNavItems.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={onNavigate}
+              style={{
+                fontSize: 14,
+                padding: '8px 10px',
+                borderRadius: 'var(--radius-sm)',
+                textDecoration: 'none',
+                color: isActive(item.to) ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 65%, transparent)',
+                background: isActive(item.to) ? 'var(--color-surface)' : 'transparent',
+                fontWeight: isActive(item.to) ? 500 : 400,
+              }}
+            >
+              {item.label}
+            </Link>
+          ))
+        ) : (
+        <>
         <Link
           to="/dashboard"
           onClick={onNavigate}
@@ -348,6 +386,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           >
             Admin
           </Link>
+        )}
+        </>
         )}
       </nav>
 

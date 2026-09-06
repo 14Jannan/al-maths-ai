@@ -1,4 +1,5 @@
 import { useState, useRef, type FormEvent } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, ApiError } from '../lib/api';
 
@@ -48,32 +49,22 @@ const TAB_LABELS: Record<Tab, string> = {
   exampapers: 'Exam Papers',
 };
 
+const VALID_TABS = Object.keys(TAB_LABELS) as Tab[];
+
+// Which section shows is now driven by the URL (/admin, /admin/users, ...)
+// — the sidebar (see Sidebar.tsx) renders these as real nav links instead
+// of an in-page tab bar, so the browser Back/Forward buttons and direct
+// links to e.g. /admin/papers work correctly.
 export function Admin() {
-  const [tab, setTab] = useState<Tab>('overview');
+  const { tab: tabParam } = useParams<{ tab?: string }>();
+  const tab: Tab = VALID_TABS.includes(tabParam as Tab) ? (tabParam as Tab) : 'overview';
 
   return (
     <main style={{ flex: 1, width: '100%', maxWidth: 1000, margin: '0 auto', padding: 'clamp(22px,4vw,40px) clamp(18px,4vw,40px) 64px' }}>
-      <h2 style={{ marginBottom: 'var(--space-2)' }}>Admin</h2>
-      <p style={{ margin: '0 0 var(--space-6)', fontSize: 14, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>
+      <h2 style={{ marginBottom: 'var(--space-2)' }}>{TAB_LABELS[tab]}</h2>
+      <p style={{ margin: '0 0 var(--space-8)', fontSize: 14, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>
         Manage the content students see.
       </p>
-
-      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-8)', borderBottom: '1px solid var(--color-divider)', flexWrap: 'wrap' }}>
-        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className="btn btn-ghost"
-            style={{
-              borderRadius: 0,
-              borderBottom: tab === t ? '2px solid var(--color-accent)' : '2px solid transparent',
-              color: tab === t ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 55%, transparent)',
-            }}
-          >
-            {TAB_LABELS[t]}
-          </button>
-        ))}
-      </div>
 
       {tab === 'overview' && <OverviewAdmin />}
       {tab === 'users' && <UsersAdmin />}

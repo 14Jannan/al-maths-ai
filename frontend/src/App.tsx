@@ -87,7 +87,7 @@ function App() {
           }
         />
         <Route
-          path="/admin"
+          path="/admin/:tab?"
           element={
             <AdminRoute>
               <Admin />
