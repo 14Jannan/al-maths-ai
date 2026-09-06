@@ -16,23 +16,14 @@ const SECTIONS: { id: SectionId; label: string; icon: string }[] = [
 
 function Row({ title, description, control }: { title: string; description: string; control: ReactNode }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 'var(--space-6)',
-        flexWrap: 'wrap',
-        padding: 'var(--space-4) 0',
-      }}
-    >
-      <div style={{ minWidth: 0, maxWidth: '60%' }}>
+    <div className="settings-row">
+      <div style={{ minWidth: 0 }}>
         <div style={{ fontFamily: 'var(--font-heading)', fontSize: 14.5 }}>{title}</div>
         <div style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)', marginTop: 2 }}>
           {description}
         </div>
       </div>
-      <div style={{ flexShrink: 0, minWidth: 120, display: 'flex', justifyContent: 'flex-end' }}>{control}</div>
+      <div className="settings-row-control">{control}</div>
     </div>
   );
 }
@@ -96,7 +87,7 @@ export function Settings() {
 
       {section === 'account' && (
         <div className="card elev-sm" style={{ padding: '0 var(--space-5)', gap: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4) 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap', padding: 'var(--space-4) 0' }}>
             <span
               style={{
                 width: 40,
