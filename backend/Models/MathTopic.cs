@@ -6,5 +6,6 @@ public class MathTopic
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Branch { get; set; } = "Pure"; // "Pure" or "Applied"
+    public string Icon { get; set; } = "📘"; // emoji shown on the student Topics roadmap
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

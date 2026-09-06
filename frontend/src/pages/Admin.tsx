@@ -7,6 +7,7 @@ interface MathTopic {
   name: string;
   description: string;
   branch: string;
+  icon: string;
 }
 
 interface PastPaper {
@@ -91,6 +92,7 @@ function TopicsAdmin() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [branch, setBranch] = useState('Pure');
+  const [icon, setIcon] = useState('📘');
   const [error, setError] = useState<string | null>(null);
 
   const { data: topics, isLoading } = useQuery({
@@ -99,7 +101,7 @@ function TopicsAdmin() {
   });
 
   const createTopic = useMutation({
-    mutationFn: (newTopic: { name: string; description: string; branch: string }) =>
+    mutationFn: (newTopic: { name: string; description: string; branch: string; icon: string }) =>
       apiFetch<MathTopic>('/api/MathTopics', { method: 'POST', body: JSON.stringify(newTopic) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mathTopics'] });
@@ -117,12 +119,16 @@ function TopicsAdmin() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    createTopic.mutate({ name, description, branch });
+    createTopic.mutate({ name, description, branch, icon });
   }
 
   return (
     <div>
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 'var(--space-8)' }}>
+        <div className="field" style={{ width: 70 }}>
+          <label>Icon</label>
+          <input className="input" value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="📘" style={{ textAlign: 'center' }} />
+        </div>
         <div className="field" style={{ flex: '1 1 200px' }}>
           <label>Topic name</label>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Differentiation" required />
@@ -148,10 +154,11 @@ function TopicsAdmin() {
 
       {topics && topics.length > 0 && (
         <table className="table">
-          <thead><tr><th>Name</th><th>Branch</th><th>Description</th><th></th></tr></thead>
+          <thead><tr><th></th><th>Name</th><th>Branch</th><th>Description</th><th></th></tr></thead>
           <tbody>
             {topics.map((t) => (
               <tr key={t.id}>
+                <td style={{ fontSize: 18 }}>{t.icon}</td>
                 <td style={{ fontWeight: 500 }}>{t.name}</td>
                 <td>{t.branch}</td>
                 <td style={{ color: 'color-mix(in srgb, var(--color-text) 62%, transparent)' }}>{t.description}</td>

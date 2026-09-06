@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api';
@@ -8,36 +8,254 @@ interface MathTopic {
   name: string;
   description: string;
   branch: string;
+  icon: string;
 }
 
-function TopicGrid({ topics, onSelect }: { topics: MathTopic[]; onSelect: (t: MathTopic) => void }) {
+type Branch = 'Pure' | 'Applied';
+
+// A cycling palette of playful sticker colors — deliberately not the app's
+// usual purple accent, since the whole point here is "colorful map", not
+// "on-brand dashboard". Each entry is [background, ring] for a node.
+const PALETTE: [string, string][] = [
+  ['#ff6b6b', '#ee5253'],
+  ['#ffa502', '#ff7f50'],
+  ['#2ed573', '#17c0eb'],
+  ['#1e90ff', '#3742fa'],
+  ['#8854d0', '#5f27cd'],
+  ['#ff6fa5', '#ee5a6f'],
+  ['#00d2d3', '#01a3a4'],
+  ['#ffc048', '#ffa502'],
+];
+
+const VISITED_KEY = 'al_maths_ai_visited_topics';
+
+function getVisited(): Set<number> {
+  try {
+    const raw = localStorage.getItem(VISITED_KEY);
+    return new Set(raw ? (JSON.parse(raw) as number[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function markVisited(id: number) {
+  try {
+    const visited = getVisited();
+    visited.add(id);
+    localStorage.setItem(VISITED_KEY, JSON.stringify([...visited]));
+  } catch {
+    // localStorage unavailable — visited badges just won't persist, no big deal
+  }
+}
+
+function BranchCard({
+  branch,
+  count,
+  onSelect,
+}: {
+  branch: Branch;
+  count: number;
+  onSelect: () => void;
+}) {
+  const isPure = branch === 'Pure';
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(255px,1fr))', gap: 'var(--space-4)' }}>
-      {topics.map((t) => (
-        <div key={t.id} className="card" style={{ padding: 'var(--space-4)', gap: 'var(--space-3)' }}>
-          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 17 }}>{t.name}</div>
-          <p className="card-body" style={{ lineHeight: 1.55 }}>{t.description}</p>
-          <button
-            className="btn btn-primary"
-            style={{ fontSize: 12.5, padding: '5px 11px', alignSelf: 'flex-start' }}
-            onClick={() => onSelect(t)}
+    <button
+      onClick={onSelect}
+      style={{
+        flex: '1 1 260px',
+        cursor: 'pointer',
+        border: 'none',
+        borderRadius: 'var(--radius-lg)',
+        padding: 'clamp(28px,5vw,44px) var(--space-6)',
+        textAlign: 'left',
+        color: '#fff',
+        background: isPure
+          ? 'linear-gradient(135deg, #8854d0, #3742fa)'
+          : 'linear-gradient(135deg, #2ed573, #01a3a4)',
+        boxShadow: 'var(--shadow-md)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+      }}
+    >
+      <div style={{ fontSize: 40 }}>{isPure ? '🧮' : '🚀'}</div>
+      <div style={{ fontFamily: 'var(--font-heading)', fontSize: 22 }}>{branch} Mathematics</div>
+      <div style={{ fontSize: 13.5, opacity: 0.9 }}>{count} topics on the map — tap to explore</div>
+    </button>
+  );
+}
+
+function RoadmapNode({
+  topic,
+  index,
+  visited,
+  onClick,
+}: {
+  topic: MathTopic;
+  index: number;
+  visited: boolean;
+  onClick: () => void;
+}) {
+  const [bg, ring] = PALETTE[index % PALETTE.length];
+  const alignLeft = index % 2 === 0;
+  const rotate = index % 2 === 0 ? -3 : 3;
+
+  return (
+    <div style={{ display: 'flex', width: '100%', justifyContent: alignLeft ? 'flex-start' : 'flex-end', position: 'relative', zIndex: 1 }}>
+      <button
+        onClick={onClick}
+        title={topic.description}
+        style={{
+          cursor: 'pointer',
+          border: 'none',
+          background: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 8,
+          width: 128,
+          marginLeft: alignLeft ? '6%' : 0,
+          marginRight: alignLeft ? 0 : '6%',
+        }}
+      >
+        <span
+          style={{
+            position: 'relative',
+            width: 76,
+            height: 76,
+            borderRadius: '50%',
+            background: `linear-gradient(145deg, ${bg}, ${ring})`,
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 32,
+            boxShadow: `0 6px 0 ${ring}, var(--shadow-md)`,
+            border: '3px solid color-mix(in srgb, white 55%, transparent)',
+            transform: `rotate(${rotate}deg)`,
+          }}
+        >
+          {topic.icon}
+          <span
+            style={{
+              position: 'absolute',
+              top: -6,
+              left: -6,
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              fontSize: 11,
+              fontWeight: 700,
+              display: 'grid',
+              placeItems: 'center',
+              boxShadow: 'var(--shadow-sm)',
+              transform: 'rotate(0deg)',
+            }}
           >
-            View resources
-          </button>
+            {index + 1}
+          </span>
+          {visited && (
+            <span
+              style={{
+                position: 'absolute',
+                bottom: -4,
+                right: -4,
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: 'var(--color-success)',
+                color: '#fff',
+                fontSize: 12,
+                display: 'grid',
+                placeItems: 'center',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              ✓
+            </span>
+          )}
+        </span>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            textAlign: 'center',
+            lineHeight: 1.25,
+            padding: '4px 10px',
+            borderRadius: 999,
+            background: 'var(--color-surface)',
+            boxShadow: 'var(--shadow-sm)',
+            color: 'var(--color-text)',
+          }}
+        >
+          {topic.name}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function Roadmap({ topics, branch, onBack }: { topics: MathTopic[]; branch: Branch; onBack: () => void }) {
+  const navigate = useNavigate();
+  const [visited, setVisited] = useState<Set<number>>(getVisited);
+
+  function handleSelect(t: MathTopic) {
+    markVisited(t.id);
+    setVisited(getVisited());
+    navigate('/resources', { state: { topicId: t.id, topicName: t.name } });
+  }
+
+  return (
+    <div>
+      <button className="btn btn-ghost" style={{ fontSize: 13, marginBottom: 'var(--space-4)' }} onClick={onBack}>
+        ← Back to Pure / Applied
+      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-8)' }}>
+        <span className={branch === 'Pure' ? 'tag tag-accent' : 'tag tag-accent-2'}>{branch} Mathematics</span>
+        <span style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>
+          Tap a stop on the map to see resources for that topic
+        </span>
+      </div>
+
+      <div style={{ position: 'relative', maxWidth: 480, margin: '0 auto', paddingBottom: 'var(--space-8)' }}>
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: 20,
+            bottom: 20,
+            width: 4,
+            transform: 'translateX(-50%)',
+            background: 'repeating-linear-gradient(to bottom, color-mix(in srgb, var(--color-text) 35%, transparent) 0 10px, transparent 10px 22px)',
+            zIndex: 0,
+          }}
+        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+          {topics.map((t, i) => (
+            <RoadmapNode key={t.id} topic={t} index={i} visited={visited.has(t.id)} onClick={() => handleSelect(t)} />
+          ))}
         </div>
-      ))}
+        <div style={{ textAlign: 'center', marginTop: 'var(--space-6)', fontSize: 28 }}>🏁</div>
+      </div>
     </div>
   );
 }
 
 export function Topics() {
-  const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [branch, setBranch] = useState<Branch | null>(null);
 
   const { data: topics, isLoading } = useQuery({
     queryKey: ['mathTopics'],
     queryFn: () => apiFetch<MathTopic[]>('/api/MathTopics'),
   });
+
+  // Dropping into a branch's roadmap doesn't make sense mid-search — clear
+  // it so the user isn't confused by a filtered map with gaps.
+  useEffect(() => {
+    if (branch) setQuery('');
+  }, [branch]);
 
   const filtered = (topics ?? []).filter(
     (t) =>
@@ -45,12 +263,8 @@ export function Topics() {
       t.description.toLowerCase().includes(query.toLowerCase())
   );
 
-  const pureTopics = filtered.filter((t) => t.branch === 'Pure');
-  const appliedTopics = filtered.filter((t) => t.branch === 'Applied');
-
-  function goToResources(t: MathTopic) {
-    navigate('/resources', { state: { topicId: t.id, topicName: t.name } });
-  }
+  const pureTopics = (topics ?? []).filter((t) => t.branch === 'Pure');
+  const appliedTopics = (topics ?? []).filter((t) => t.branch === 'Applied');
 
   return (
     <main style={{ flex: 1, width: '100%', maxWidth: 1180, margin: '0 auto', padding: 'clamp(22px,4vw,40px) clamp(18px,4vw,40px) 64px' }}>
@@ -58,21 +272,23 @@ export function Topics() {
         <div>
           <h2 style={{ marginBottom: 4 }}>Math topics</h2>
           <p style={{ margin: 0, fontSize: 14, color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>
-            Ask the tutor about any topic, with the right A/L method every time.
+            {branch ? 'Your route through the syllabus.' : 'Pick a branch to start your route through the syllabus.'}
           </p>
         </div>
-        <input
-          className="input"
-          placeholder="Search topics"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          style={{ width: 'min(280px,100%)' }}
-        />
+        {!branch && (
+          <input
+            className="input"
+            placeholder="Search topics"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{ width: 'min(280px,100%)' }}
+          />
+        )}
       </div>
 
       {isLoading && <p style={{ fontSize: 14, opacity: 0.7 }}>Loading topics…</p>}
 
-      {!isLoading && filtered.length === 0 && (
+      {!isLoading && !branch && filtered.length === 0 && (
         <div style={{ border: '1px dashed color-mix(in srgb, var(--color-text) 22%, transparent)', borderRadius: 'var(--radius-md)', padding: 'clamp(28px,5vw,52px)', textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-heading)', fontSize: 18, marginBottom: 6 }}>
             {topics && topics.length === 0 ? 'No topics yet' : `No topic matches "${query}"`}
@@ -85,24 +301,38 @@ export function Topics() {
         </div>
       )}
 
-      {pureTopics.length > 0 && (
-        <div style={{ marginBottom: 'var(--space-8)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-4)' }}>
-            <span className="tag tag-accent">Pure Mathematics</span>
-            <span style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>{pureTopics.length} topics</span>
-          </div>
-          <TopicGrid topics={pureTopics} onSelect={goToResources} />
+      {!branch && query && filtered.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(255px,1fr))', gap: 'var(--space-4)' }}>
+          {filtered.map((t) => (
+            <button
+              key={t.id}
+              className="card"
+              style={{ padding: 'var(--space-4)', gap: 'var(--space-2)', textAlign: 'left', cursor: 'pointer', border: 'none' }}
+              onClick={() => setBranch(t.branch as Branch)}
+            >
+              <div style={{ fontSize: 24 }}>{t.icon}</div>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>{t.name}</div>
+              <span className={t.branch === 'Pure' ? 'tag tag-accent' : 'tag tag-accent-2'} style={{ alignSelf: 'flex-start' }}>
+                {t.branch}
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
-      {appliedTopics.length > 0 && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-4)' }}>
-            <span className="tag tag-accent-2">Applied Mathematics</span>
-            <span style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>{appliedTopics.length} topics</span>
-          </div>
-          <TopicGrid topics={appliedTopics} onSelect={goToResources} />
+      {!isLoading && !branch && !query && topics && topics.length > 0 && (
+        <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+          <BranchCard branch="Pure" count={pureTopics.length} onSelect={() => setBranch('Pure')} />
+          <BranchCard branch="Applied" count={appliedTopics.length} onSelect={() => setBranch('Applied')} />
         </div>
+      )}
+
+      {branch && (
+        <Roadmap
+          branch={branch}
+          topics={branch === 'Pure' ? pureTopics : appliedTopics}
+          onBack={() => setBranch(null)}
+        />
       )}
     </main>
   );

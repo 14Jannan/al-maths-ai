@@ -27,7 +27,8 @@ public class MathTopicsController : ControllerBase
                 Id = t.Id,
                 Name = t.Name,
                 Description = t.Description,
-                Branch = t.Branch
+                Branch = t.Branch,
+                Icon = t.Icon
             })
             .ToListAsync();
 
@@ -48,7 +49,8 @@ public class MathTopicsController : ControllerBase
             Id = topic.Id,
             Name = topic.Name,
             Description = topic.Description,
-            Branch = topic.Branch
+            Branch = topic.Branch,
+            Icon = topic.Icon
         });
     }
 
@@ -60,7 +62,8 @@ public class MathTopicsController : ControllerBase
         {
             Name = dto.Name,
             Description = dto.Description,
-            Branch = dto.Branch
+            Branch = dto.Branch,
+            Icon = string.IsNullOrWhiteSpace(dto.Icon) ? "📘" : dto.Icon
         };
 
         _context.MathTopics.Add(topic);
@@ -83,6 +86,7 @@ public class MathTopicsController : ControllerBase
         topic.Name = dto.Name;
         topic.Description = dto.Description;
         topic.Branch = dto.Branch;
+        if (!string.IsNullOrWhiteSpace(dto.Icon)) topic.Icon = dto.Icon;
         await _context.SaveChangesAsync();
 
         return NoContent();

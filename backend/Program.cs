@@ -118,24 +118,42 @@ using (var scope = app.Services.CreateScope())
         await db.SaveChangesAsync();
     }
 
-    // Seed the 20 official MathTopics (upsert by name, not "only if empty")
-    // — a handful of topics may already exist from earlier manual admin
-    // entries, and those rows are referenced by real PastPapers/Resources
-    // via MathTopicId, so they must keep their existing Id. Matching ones
-    // just get their description refreshed; new ones are inserted.
+    // Sync MathTopics against the official syllabus list (upsert by name,
+    // plus cleanup of names the syllabus no longer uses — e.g. a prior
+    // correction renamed/restructured several topics). Matching names just
+    // get their description/branch/icon refreshed, so any row referenced by
+    // real PastPapers/Resources keeps its Id. A leftover row whose name is
+    // NOT in the current list only gets deleted if nothing references it —
+    // never delete out from under real content.
+    var seedTopics = backend.Data.MathTopicSeedData.GetTopics();
+    var seedNames = seedTopics.Select(t => t.Name).ToHashSet();
     var existingTopics = await db.MathTopics.ToDictionaryAsync(t => t.Name, t => t);
-    foreach (var topic in backend.Data.MathTopicSeedData.GetTopics())
+
+    foreach (var topic in seedTopics)
     {
         if (existingTopics.TryGetValue(topic.Name, out var existing))
         {
             existing.Description = topic.Description;
             existing.Branch = topic.Branch;
+            existing.Icon = topic.Icon;
         }
         else
         {
             db.MathTopics.Add(topic);
         }
     }
+
+    var referencedTopicIds = await db.PastPapers.Select(p => p.MathTopicId)
+        .Union(db.Resources.Select(r => r.MathTopicId))
+        .ToListAsync();
+    var orphaned = existingTopics.Values
+        .Where(t => !seedNames.Contains(t.Name) && !referencedTopicIds.Contains(t.Id))
+        .ToList();
+    if (orphaned.Count > 0)
+    {
+        db.MathTopics.RemoveRange(orphaned);
+    }
+
     await db.SaveChangesAsync();
 
     // Backfill embeddings for any Resource created before the Embedding
