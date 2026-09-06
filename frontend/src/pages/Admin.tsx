@@ -1,6 +1,10 @@
-import { useState, useRef, type FormEvent } from 'react';
+import { useState, useRef, type FormEvent, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, Cell, LabelList, PieChart, Pie, Legend,
+} from 'recharts';
 import { apiFetch, ApiError } from '../lib/api';
 
 interface MathTopic {
@@ -784,10 +788,179 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
   );
 }
 
+// Backs the three charts below — all computed server-side from real rows
+// (see AdminController.GetAnalytics), nothing here is mocked.
+interface UserGrowthPoint {
+  date: string;
+  newUsers: number;
+  cumulativeUsers: number;
+}
+interface TopicUsage {
+  topic: string;
+  mentionCount: number;
+}
+interface AdminAnalytics {
+  userGrowth: UserGrowthPoint[];
+  mostAskedTopics: TopicUsage[];
+  freeUsers: number;
+  premiumUsers: number;
+}
+
+// Fixed categorical order (see design-system.css --chart-series-1..8) — never
+// cycled or reassigned per-render, so a given slot always means the same thing.
+const CHART_SERIES = [
+  'var(--chart-series-1)', 'var(--chart-series-2)', 'var(--chart-series-3)', 'var(--chart-series-4)',
+  'var(--chart-series-5)', 'var(--chart-series-6)', 'var(--chart-series-7)', 'var(--chart-series-8)',
+];
+
+function ChartCard({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+  return (
+    <div className="card" style={{ padding: 'var(--space-4)', gap: 4 }}>
+      <div style={{ fontSize: 13, fontWeight: 500 }}>{title}</div>
+      <div style={{ fontSize: 12, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 'var(--space-3)' }}>{subtitle}</div>
+      {children}
+    </div>
+  );
+}
+
+const tooltipStyle = {
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-divider)',
+  borderRadius: 'var(--radius-sm)',
+  fontSize: 12.5,
+  color: 'var(--color-text)',
+};
+
+function UserGrowthChart({ data }: { data: UserGrowthPoint[] }) {
+  const isFlat = data.length === 0 || data.every((d) => d.newUsers === 0);
+  return (
+    <ChartCard title="User growth" subtitle="Cumulative signups, last 30 days — the platform is growing.">
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="userGrowthFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--chart-series-1)" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="var(--chart-series-1)" stopOpacity={0.03} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 10.5, fill: 'var(--chart-axis)' }}
+            tickFormatter={(d: string) => d.slice(5)}
+            axisLine={{ stroke: 'var(--chart-grid)' }}
+            tickLine={false}
+            interval="preserveStartEnd"
+            minTickGap={24}
+          />
+          <YAxis tick={{ fontSize: 10.5, fill: 'var(--chart-axis)' }} axisLine={false} tickLine={false} allowDecimals={false} width={32} />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            labelFormatter={(d) => String(d)}
+            formatter={(value) => [String(value), 'Total users']}
+          />
+          <Area type="monotone" dataKey="cumulativeUsers" name="Total users" stroke="var(--chart-series-1)" strokeWidth={2} fill="url(#userGrowthFill)" dot={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+      {isFlat && (
+        <div style={{ fontSize: 11.5, color: 'color-mix(in srgb, var(--color-text) 50%, transparent)', marginTop: 4 }}>
+          No new signups in the last 30 days yet.
+        </div>
+      )}
+    </ChartCard>
+  );
+}
+
+function MostAskedTopicsChart({ data }: { data: TopicUsage[] }) {
+  if (data.length === 0) {
+    return (
+      <ChartCard title="Most-asked topics" subtitle="How students actually use the AI tutor.">
+        <div style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', padding: '24px 0', textAlign: 'center' }}>
+          Not enough chat activity yet to surface a trend.
+        </div>
+      </ChartCard>
+    );
+  }
+  // Chart reads top-to-bottom by rank, so reverse for recharts' bottom-up
+  // vertical-bar layout.
+  const chartData = [...data].reverse();
+  return (
+    <ChartCard title="Most-asked topics" subtitle="Chat mentions by topic — an AI-tutor usage signal, top 8.">
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 28, left: 8, bottom: 0 }}>
+          <CartesianGrid stroke="var(--chart-grid)" horizontal={false} />
+          <XAxis type="number" tick={{ fontSize: 10.5, fill: 'var(--chart-axis)' }} axisLine={{ stroke: 'var(--chart-grid)' }} tickLine={false} allowDecimals={false} />
+          <YAxis
+            type="category"
+            dataKey="topic"
+            width={110}
+            tick={{ fontSize: 11, fill: 'var(--color-text)' }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip contentStyle={tooltipStyle} formatter={(value) => [String(value), 'Mentions']} />
+          <Bar dataKey="mentionCount" name="Mentions" radius={[0, 4, 4, 0]} maxBarSize={18}>
+            {chartData.map((_, i) => (
+              // Original (unreversed) rank picks the color slot, so topic #1
+              // always gets slot 1 regardless of the vertical-layout reversal.
+              <Cell key={i} fill={CHART_SERIES[(data.length - 1 - i) % CHART_SERIES.length]} />
+            ))}
+            <LabelList dataKey="mentionCount" position="right" style={{ fill: 'var(--color-text)', fontSize: 11 }} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+}
+
+function FreeVsPremiumChart({ freeUsers, premiumUsers }: { freeUsers: number; premiumUsers: number }) {
+  const total = freeUsers + premiumUsers;
+  const pieData = [
+    { name: 'Free', value: freeUsers, fill: 'var(--chart-series-1)' },
+    { name: 'Premium', value: premiumUsers, fill: 'var(--chart-series-2)' },
+  ];
+  return (
+    <ChartCard title="Free vs Premium" subtitle="Subscription split — proof the business model works.">
+      {total === 0 ? (
+        <div style={{ fontSize: 12.5, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', padding: '24px 0', textAlign: 'center' }}>
+          No users yet.
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <PieChart>
+            <Pie
+              data={pieData}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={50}
+              outerRadius={78}
+              paddingAngle={2}
+              stroke="var(--color-surface)"
+              strokeWidth={2}
+              label={(props: { name?: string; value?: number; percent?: number }) =>
+                `${props.name ?? ''} ${props.value ?? 0} (${Math.round((props.percent ?? 0) * 100)}%)`
+              }
+              labelLine={false}
+            >
+              {pieData.map((d) => <Cell key={d.name} fill={d.fill} />)}
+            </Pie>
+            <Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [String(value), String(name)]} />
+            <Legend verticalAlign="bottom" height={24} wrapperStyle={{ fontSize: 12 }} />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </ChartCard>
+  );
+}
+
 function OverviewAdmin() {
   const { data, isLoading } = useQuery({
     queryKey: ['adminOverview'],
     queryFn: () => apiFetch<AdminOverview>('/api/Admin/overview'),
+  });
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['adminAnalytics'],
+    queryFn: () => apiFetch<AdminAnalytics>('/api/Admin/analytics'),
   });
 
   if (isLoading || !data) return <p style={{ fontSize: 14, opacity: 0.7 }}>Loading…</p>;
@@ -800,6 +973,17 @@ function OverviewAdmin() {
         <StatCard label="Admins" value={data.adminCount} />
         <StatCard label="Chat messages today" value={data.chatMessagesToday} />
       </div>
+
+      <h6 style={{ color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 'var(--space-4)' }}>Insights</h6>
+      {analyticsLoading || !analytics ? (
+        <p style={{ fontSize: 14, opacity: 0.7, marginBottom: 'var(--space-8)' }}>Loading charts…</p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
+          <UserGrowthChart data={analytics.userGrowth} />
+          <MostAskedTopicsChart data={analytics.mostAskedTopics} />
+          <FreeVsPremiumChart freeUsers={analytics.freeUsers} premiumUsers={analytics.premiumUsers} />
+        </div>
+      )}
 
       <h6 style={{ color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 'var(--space-4)' }}>Content</h6>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 'var(--space-3)' }}>

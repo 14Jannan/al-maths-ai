@@ -6,19 +6,21 @@ import { getSubscriptionStatus } from '../lib/payments';
 import { listConversations, renameConversation, deleteConversation, type ConversationSummary } from '../lib/conversations';
 import { GlobalSearch } from './GlobalSearch';
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard' },
+// A student's nav — the plain student-facing browse pages.
+const studentTailItems = [
   { to: '/topics', label: 'Topics' },
   { to: '/papers', label: 'Past Papers' },
   { to: '/resources', label: 'Resources' },
   { to: '/settings', label: 'Settings' },
 ];
 
-// Shown instead of navItems while inside /admin — the admin section's own
-// sub-pages (previously an in-page horizontal tab bar in Admin.tsx) become
-// real sidebar links here, so they're reachable/bookmarkable the same way
-// every other page in the app is.
-const adminNavItems = [
+// An admin isn't a student — always show the admin management pages
+// instead of the student browse pages (not just while inside /admin), so
+// there's no separate "Admin" link to click through first. The admin
+// section's own sub-pages (previously an in-page horizontal tab bar in
+// Admin.tsx) are real sidebar links here, reachable/bookmarkable the same
+// way every other page in the app is.
+const adminTailItems = [
   { to: '/admin', label: 'Overview' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/topics', label: 'Topics' },
@@ -26,7 +28,6 @@ const adminNavItems = [
   { to: '/admin/resources', label: 'Resources' },
   { to: '/admin/documents', label: 'Documents' },
   { to: '/admin/exampapers', label: 'Exam Papers' },
-  { to: '/tutor', label: 'AI Tutor' },
   { to: '/settings', label: 'Settings' },
 ];
 
@@ -62,8 +63,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { email, isAdmin, logout } = useAuth();
 
   const onTutorRoute = location.pathname.startsWith('/tutor');
-  const isAdminContext = location.pathname.startsWith('/admin');
   const activeConversationId = params.conversationId ? Number(params.conversationId) : null;
+  const tailItems = isAdmin ? adminTailItems : studentTailItems;
 
   const [tutorOpen, setTutorOpen] = useState(onTutorRoute);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -129,7 +130,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 9, marginBottom: 'var(--space-6)' }}>
         <Link
-          to="/dashboard"
+          to={isAdmin ? '/admin' : '/dashboard'}
           onClick={onNavigate}
           style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', padding: '4px 6px', minWidth: 0 }}
         >
@@ -166,42 +167,25 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           paddingRight: 4,
         }}
       >
-        {isAdminContext ? (
-          adminNavItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={onNavigate}
-              style={{
-                fontSize: 14,
-                padding: '8px 10px',
-                borderRadius: 'var(--radius-sm)',
-                textDecoration: 'none',
-                color: isActive(item.to) ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 65%, transparent)',
-                background: isActive(item.to) ? 'var(--color-surface)' : 'transparent',
-                fontWeight: isActive(item.to) ? 500 : 400,
-              }}
-            >
-              {item.label}
-            </Link>
-          ))
-        ) : (
-        <>
-        <Link
-          to="/dashboard"
-          onClick={onNavigate}
-          style={{
-            fontSize: 14,
-            padding: '8px 10px',
-            borderRadius: 'var(--radius-sm)',
-            textDecoration: 'none',
-            color: isActive('/dashboard') ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 65%, transparent)',
-            background: isActive('/dashboard') ? 'var(--color-surface)' : 'transparent',
-            fontWeight: isActive('/dashboard') ? 500 : 400,
-          }}
-        >
-          Dashboard
-        </Link>
+        {/* Admins aren't students — they skip straight to Overview (the
+            first adminTailItems entry) instead of the student dashboard. */}
+        {!isAdmin && (
+          <Link
+            to="/dashboard"
+            onClick={onNavigate}
+            style={{
+              fontSize: 14,
+              padding: '8px 10px',
+              borderRadius: 'var(--radius-sm)',
+              textDecoration: 'none',
+              color: isActive('/dashboard') ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 65%, transparent)',
+              background: isActive('/dashboard') ? 'var(--color-surface)' : 'transparent',
+              fontWeight: isActive('/dashboard') ? 500 : 400,
+            }}
+          >
+            Dashboard
+          </Link>
+        )}
 
         {/* AI Tutor — expandable, with conversation history nested underneath */}
         <button
@@ -351,7 +335,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         )}
 
-        {navItems.slice(1).map((item) => (
+        {tailItems.map((item) => (
           <Link
             key={item.to}
             to={item.to}
@@ -369,26 +353,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             {item.label}
           </Link>
         ))}
-
-        {isAdmin && (
-          <Link
-            to="/admin"
-            onClick={onNavigate}
-            style={{
-              fontSize: 14,
-              padding: '8px 10px',
-              borderRadius: 'var(--radius-sm)',
-              textDecoration: 'none',
-              marginTop: 'var(--space-3)',
-              color: isActive('/admin') ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 65%, transparent)',
-              background: isActive('/admin') ? 'var(--color-surface)' : 'transparent',
-            }}
-          >
-            Admin
-          </Link>
-        )}
-        </>
-        )}
       </nav>
 
       {/* Compact account footer — profile row links to account, upgrade is

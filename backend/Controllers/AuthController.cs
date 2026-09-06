@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.DTOs;
+using backend.Models;
 using backend.Services;
 
 namespace backend.Controllers;
@@ -11,15 +12,15 @@ namespace backend.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly TokenService _tokenService;
     private readonly EmailService _emailService;
     private readonly AppDbContext _context;
 
     public AuthController(
-        UserManager<IdentityUser> userManager,
-        SignInManager<IdentityUser> signInManager,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         TokenService tokenService,
         EmailService emailService,
         AppDbContext context)
@@ -44,7 +45,7 @@ public class AuthController : ControllerBase
         // UserName carries the display name here — login looks users up by
         // Email (FindByEmailAsync below), never by UserName, so this is
         // safe to repurpose without touching authentication.
-        var user = new IdentityUser { UserName = dto.Username, Email = dto.Email, EmailConfirmed = false };
+        var user = new ApplicationUser { UserName = dto.Username, Email = dto.Email, EmailConfirmed = false, CreatedAt = DateTime.UtcNow };
         var result = await _userManager.CreateAsync(user, dto.Password);
 
         if (!result.Succeeded)

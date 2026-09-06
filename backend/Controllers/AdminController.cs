@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.DTOs;
+using backend.Models;
 
 namespace backend.Controllers;
 
@@ -13,9 +14,9 @@ namespace backend.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly AppDbContext _context;
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public AdminController(AppDbContext context, UserManager<IdentityUser> userManager)
+    public AdminController(AppDbContext context, UserManager<ApplicationUser> userManager)
     {
         _context = context;
         _userManager = userManager;
@@ -24,7 +25,6 @@ public class AdminController : ControllerBase
     [HttpGet("overview")]
     public async Task<IActionResult> GetOverview()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var weekAgo = DateTime.UtcNow.AddDays(-7);
 
         var totalUsers = await _userManager.Users.CountAsync();
@@ -41,10 +41,72 @@ public class AdminController : ControllerBase
             ExamPaperDocumentsCount = await _context.ExamPaperDocuments.CountAsync(),
             DocumentChunksCount = await _context.DocumentChunks.CountAsync(),
             ChatMessagesToday = await _context.ChatMessages.CountAsync(m => m.CreatedAt.Date == DateTime.UtcNow.Date),
-            NewUsersThisWeek = totalUsers // placeholder overwritten below since IdentityUser has no CreatedAt by default
+            NewUsersThisWeek = await _userManager.Users.CountAsync(u => u.CreatedAt >= weekAgo)
         };
 
         return Ok(overview);
+    }
+
+    // Three real, DB-backed charts for the Overview page — nothing here is
+    // mocked or invented:
+    //  - User Growth: daily new-signup counts from ApplicationUser.CreatedAt
+    //    (only tracked from when that column was added — existing accounts
+    //    from before then all show up on that migration date, which is the
+    //    honest answer since their real join dates were never recorded).
+    //  - Most-Asked Topics: how many student chat messages mention each
+    //    topic's name (case-insensitive substring match) — an approximate
+    //    but genuine usage signal, since chat messages aren't tagged with a
+    //    topic anywhere else in the schema.
+    //  - Free vs Premium: split of the same PremiumSubscribers logic used
+    //    in GetOverview above.
+    [HttpGet("analytics")]
+    public async Task<IActionResult> GetAnalytics()
+    {
+        const int days = 30;
+        var since = DateTime.UtcNow.Date.AddDays(-(days - 1));
+
+        var signups = await _userManager.Users
+            .Where(u => u.CreatedAt >= since)
+            .Select(u => u.CreatedAt.Date)
+            .ToListAsync();
+        var signupCounts = signups.GroupBy(d => d).ToDictionary(g => g.Key, g => g.Count());
+
+        var totalUsersBeforeWindow = await _userManager.Users.CountAsync(u => u.CreatedAt < since);
+        var cumulative = totalUsersBeforeWindow;
+        var userGrowth = new List<UserGrowthPointDto>();
+        for (var day = since; day <= DateTime.UtcNow.Date; day = day.AddDays(1))
+        {
+            var newUsers = signupCounts.GetValueOrDefault(day, 0);
+            cumulative += newUsers;
+            userGrowth.Add(new UserGrowthPointDto { Date = day.ToString("yyyy-MM-dd"), NewUsers = newUsers, CumulativeUsers = cumulative });
+        }
+
+        var topics = await _context.MathTopics.Select(t => t.Name).ToListAsync();
+        var userMessages = await _context.ChatMessages
+            .Where(m => m.Role == "user")
+            .Select(m => m.Content)
+            .ToListAsync();
+        var mostAskedTopics = topics
+            .Select(topic => new TopicUsageDto
+            {
+                Topic = topic,
+                MentionCount = userMessages.Count(m => m.Contains(topic, StringComparison.OrdinalIgnoreCase))
+            })
+            .Where(t => t.MentionCount > 0)
+            .OrderByDescending(t => t.MentionCount)
+            .Take(8)
+            .ToList();
+
+        var premiumUsers = await _context.Subscriptions.CountAsync(s => s.Status == "Active" && s.ExpiresAt > DateTime.UtcNow);
+        var totalUsers = await _userManager.Users.CountAsync();
+
+        return Ok(new AdminAnalyticsDto
+        {
+            UserGrowth = userGrowth,
+            MostAskedTopics = mostAskedTopics,
+            PremiumUsers = premiumUsers,
+            FreeUsers = Math.Max(0, totalUsers - premiumUsers)
+        });
     }
 
     [HttpGet("users")]

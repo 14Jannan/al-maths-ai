@@ -83,6 +83,21 @@
   --shadow-sm: 0 0 0 1px #3f424d;
   --shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0,0,0,0.55);
   --shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65);
+
+  /* Chart palette — dataviz-skill categorical order (fixed, never cycled),
+     validated (validate_palette.js) against this theme's own --color-surface
+     (#232532): worst adjacent CVD ΔE 8.4, normal-vision ΔE 19.3, all 8 slots
+     >=3:1 contrast. Used only by the Admin Overview charts. */
+  --chart-series-1: #3987e5; /* blue — also the sequential hue (User Growth) */
+  --chart-series-2: #d95926; /* orange — Free vs Premium's second slot */
+  --chart-series-3: #199e70; /* aqua */
+  --chart-series-4: #c98500; /* yellow */
+  --chart-series-5: #d55181; /* magenta */
+  --chart-series-6: #008300; /* green */
+  --chart-series-7: #9085e9; /* violet */
+  --chart-series-8: #e66767; /* red */
+  --chart-grid: #383835;
+  --chart-axis: color-mix(in srgb, var(--color-text) 55%, transparent);
 }
 
 /* Light theme — same roles, ink-on-paper instead of paper-on-ink. Applied
@@ -108,6 +123,21 @@
   --shadow-sm: 0 0 0 1px #e3e5f0;
   --shadow-md: 0 0 0 1px #d8dbe8, 0 6px 18px rgba(28,30,42,0.08);
   --shadow-lg: 0 0 0 1px #c7cbdf, 0 16px 40px rgba(28,30,42,0.12);
+
+  /* Chart palette — same fixed order, re-stepped for the light surface
+     (#ffffff); validated separately: worst adjacent CVD ΔE 9.1, normal-vision
+     ΔE 19.6. Aqua/yellow/magenta sit under 3:1 on white, so those series
+     always carry a visible direct label (never color alone) — see Admin.tsx. */
+  --chart-series-1: #2a78d6;
+  --chart-series-2: #eb6834;
+  --chart-series-3: #1baf7a;
+  --chart-series-4: #eda100;
+  --chart-series-5: #e87ba4;
+  --chart-series-6: #008300;
+  --chart-series-7: #4a3aa7;
+  --chart-series-8: #e34948;
+  --chart-grid: #e1e0d9;
+  --chart-axis: color-mix(in srgb, var(--color-text) 55%, transparent);
 }
 
 body {

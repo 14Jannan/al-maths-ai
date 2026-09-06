@@ -48,7 +48,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         o => o.UseVector()));
 
 // Identity system — user registration, login, password hashing, roles
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+builder.Services.AddIdentity<backend.Models.ApplicationUser, IdentityRole>(options =>
 {
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;

@@ -28,3 +28,26 @@ public class SetRoleDto
 {
     public bool IsAdmin { get; set; }
 }
+
+// Backs the three Overview charts — all computed from real rows (user
+// CreatedAt, Subscriptions, ChatMessages), never mocked.
+public class AdminAnalyticsDto
+{
+    public List<UserGrowthPointDto> UserGrowth { get; set; } = new();
+    public List<TopicUsageDto> MostAskedTopics { get; set; } = new();
+    public int FreeUsers { get; set; }
+    public int PremiumUsers { get; set; }
+}
+
+public class UserGrowthPointDto
+{
+    public string Date { get; set; } = string.Empty; // yyyy-MM-dd
+    public int NewUsers { get; set; }
+    public int CumulativeUsers { get; set; }
+}
+
+public class TopicUsageDto
+{
+    public string Topic { get; set; } = string.Empty;
+    public int MentionCount { get; set; }
+}
