@@ -374,6 +374,11 @@ input[type="file"]:disabled::file-selector-button { cursor: not-allowed; }
       color-mix(in srgb, var(--color-text) 8%, transparent) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
 }
  
+/* A wide admin table (Users: Username/Email/Verified/Plan/Role/Edit, say)
+   has no business forcing the whole page to scroll sideways on a phone —
+   scope the horizontal scroll to the table itself instead. */
+.table-wrap { width: 100%; overflow-x: auto; }
+
 /* — dialog — */
 .dialog-backdrop {
   position: fixed; inset: 0; display: grid; place-items: center;
