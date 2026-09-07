@@ -181,6 +181,11 @@ Earlier messages in this conversation are provided for context. Refer back to th
         var requestBody = new
         {
             model = visionModel,
+            // Without a cap, Groq estimates the expected output against the
+            // model's own default (much higher than this account's 1000
+            // output-tokens-per-minute limit on qwen3.8-27b) and rejects the
+            // request outright with a 429 before it ever runs.
+            max_tokens = 900,
             messages = new object[]
             {
                 new { role = "system", content = systemPrompt },
