@@ -24,6 +24,14 @@ export function Math({ tex, display = false, style, className }: MathProps) {
       katex.render(tex, ref.current, {
         displayMode: display,
         throwOnError: false,
+        // KaTeX's default output includes a hidden MathML "annotation" copy
+        // of each formula (for screen readers) alongside the visible HTML.
+        // Selecting and copying text out of a KaTeX-rendered page often
+        // grabs both, producing a garbled doubled-up formula in the
+        // clipboard even though it renders cleanly on screen. 'html'-only
+        // output removes that hidden branch — the trade-off is a small
+        // accessibility cost (no semantic MathML for screen readers).
+        output: 'html',
       });
     }
   }, [tex, display]);
