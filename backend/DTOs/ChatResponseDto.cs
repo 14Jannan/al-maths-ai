@@ -6,6 +6,7 @@ public class ChatResponseDto
     public int ConversationId { get; set; }
     public List<RelatedPastPaperDto> RelatedPastPapers { get; set; } = new();
     public List<RelatedResourceDto> RelatedResources { get; set; } = new();
+    public List<RelatedDiagramDto> RelatedDiagrams { get; set; } = new();
 }
 
 public class RelatedPastPaperDto
@@ -22,4 +23,10 @@ public class RelatedResourceDto
     public string Title { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
     public string SourceType { get; set; } = string.Empty;
+}
+
+public class RelatedDiagramDto
+{
+    public string SourceTitle { get; set; } = string.Empty;
+    public string ImageUrl { get; set; } = string.Empty;
 }

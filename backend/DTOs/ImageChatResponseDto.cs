@@ -7,4 +7,5 @@ public class ImageChatResponseDto
     public int ConversationId { get; set; }
     public List<RelatedPastPaperDto> RelatedPastPapers { get; set; } = new();
     public List<RelatedResourceDto> RelatedResources { get; set; } = new();
+    public List<RelatedDiagramDto> RelatedDiagrams { get; set; } = new();
 }

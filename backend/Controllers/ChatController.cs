@@ -109,11 +109,23 @@ public class ChatController : ControllerBase
         // from the outer try/catch that guards the AI call itself.
         var relatedPapers = new List<RelatedPastPaperDto>();
         var relatedResources = new List<RelatedResourceDto>();
+        var relatedDiagrams = new List<RelatedDiagramDto>();
         var pastPaperReferenceContext = string.Empty;
         try
         {
             var questionEmbedding = await _embeddingService.GetEmbeddingAsync(dto.Message, "search_query");
             var questionVector = new Pgvector.Vector(questionEmbedding);
+
+            // The best-matching uploaded-document page that actually has an
+            // image — surfaced in the UI directly (not left to the model to
+            // remember to reference), since a diagram/graph on that page
+            // often carries information the text alone can't.
+            relatedDiagrams = await _context.DocumentChunks
+                .Where(d => d.Embedding != null && d.PageImageUrl != null)
+                .OrderBy(d => d.Embedding!.CosineDistance(questionVector))
+                .Take(1)
+                .Select(d => new RelatedDiagramDto { SourceTitle = d.SourceTitle, ImageUrl = d.PageImageUrl! })
+                .ToListAsync();
 
             // Full Q&A for the closest couple of matches — this is what
             // actually gets fed to the model as grounding, not just the
@@ -179,7 +191,7 @@ public class ChatController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            return Ok(new ChatResponseDto { Reply = reply, ConversationId = conversation.Id, RelatedPastPapers = relatedPapers, RelatedResources = relatedResources });
+            return Ok(new ChatResponseDto { Reply = reply, ConversationId = conversation.Id, RelatedPastPapers = relatedPapers, RelatedResources = relatedResources, RelatedDiagrams = relatedDiagrams });
         }
         catch (Exception ex)
         {
@@ -257,6 +269,7 @@ public class ChatController : ControllerBase
         // extra grounding, never a failed response.
         var relatedPapers = new List<RelatedPastPaperDto>();
         var relatedResources = new List<RelatedResourceDto>();
+        var relatedDiagrams = new List<RelatedDiagramDto>();
         var ragContext = string.Empty;
         try
         {
@@ -269,6 +282,13 @@ public class ChatController : ControllerBase
 
                 var questionEmbedding = await _embeddingService.GetEmbeddingAsync(searchText, "search_query");
                 var questionVector = new Pgvector.Vector(questionEmbedding);
+
+                relatedDiagrams = await _context.DocumentChunks
+                    .Where(d => d.Embedding != null && d.PageImageUrl != null)
+                    .OrderBy(d => d.Embedding!.CosineDistance(questionVector))
+                    .Take(1)
+                    .Select(d => new RelatedDiagramDto { SourceTitle = d.SourceTitle, ImageUrl = d.PageImageUrl! })
+                    .ToListAsync();
 
                 var closestPapers = await _context.PastPapers
                     .Where(p => p.Embedding != null)
@@ -322,7 +342,7 @@ public class ChatController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            return Ok(new ImageChatResponseDto { Reply = reply, ImageUrl = imageUrl, ConversationId = conversation.Id, RelatedPastPapers = relatedPapers, RelatedResources = relatedResources });
+            return Ok(new ImageChatResponseDto { Reply = reply, ImageUrl = imageUrl, ConversationId = conversation.Id, RelatedPastPapers = relatedPapers, RelatedResources = relatedResources, RelatedDiagrams = relatedDiagrams });
         }
         catch (Exception ex)
         {

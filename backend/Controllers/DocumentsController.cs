@@ -77,20 +77,61 @@ public class DocumentsController : ControllerBase
         int chunksCreated = 0;
         string? stoppedReason = null;
 
+        // Every page gets rasterized to an image regardless of which path is
+        // taken below — a page's diagrams/graphs live only in this image,
+        // never in its text layer (PdfPig's text extraction can't see them
+        // at all), so without this a text-based PDF's figures are silently
+        // lost even though its text extracts perfectly.
+        List<byte[]> pageImages;
+        using (var stream = file.OpenReadStream())
+        {
+            pageImages = await _processingService.RasterizePdfPagesAsync(stream);
+        }
+
+        int chunkIndex = 0;
+
         if (_processingService.HasExtractableText(extractedText, pageCount))
         {
-            // Normal path: real text layer
-            var chunks = _processingService.ChunkText(extractedText);
-            for (int i = 0; i < chunks.Count; i++)
+            // Normal path: real text layer. Chunked per-page (not across the
+            // whole document) so every chunk can be tied to the one page
+            // image that actually carries its diagram, if it has one.
+            List<string> pageTexts;
+            using (var stream = file.OpenReadStream())
             {
-                var embedding = await _embeddingService.GetEmbeddingAsync(chunks[i], "search_document");
-                _context.DocumentChunks.Add(new DocumentChunk
+                pageTexts = _processingService.ExtractTextPerPage(stream);
+            }
+
+            for (int page = 0; page < pageTexts.Count; page++)
+            {
+                if (string.IsNullOrWhiteSpace(pageTexts[page])) continue;
+
+                string? pageImageUrl = null;
+                if (page < pageImages.Count)
                 {
-                    SourceTitle = file.FileName, ChunkText = chunks[i], ChunkIndex = i,
-                    MathTopicId = topicId, Embedding = new Pgvector.Vector(embedding)
-                });
-                await _context.SaveChangesAsync(); // save immediately, one chunk at a time
-                chunksCreated++;
+                    try
+                    {
+                        using var pageStream = new MemoryStream(pageImages[page]);
+                        var pageFileName = $"{Guid.NewGuid()}.jpg";
+                        pageImageUrl = await _storageService.UploadDocumentAsync("syllabus-documents", pageFileName, pageStream, "image/jpeg");
+                    }
+                    catch
+                    {
+                        // Non-fatal — the chunk's text still gets indexed even if its page image fails to upload
+                    }
+                }
+
+                var chunks = _processingService.ChunkText(pageTexts[page]);
+                foreach (var chunkText in chunks)
+                {
+                    var embedding = await _embeddingService.GetEmbeddingAsync(chunkText, "search_document");
+                    _context.DocumentChunks.Add(new DocumentChunk
+                    {
+                        SourceTitle = file.FileName, ChunkText = chunkText, ChunkIndex = chunkIndex++,
+                        MathTopicId = topicId, Embedding = new Pgvector.Vector(embedding), PageImageUrl = pageImageUrl
+                    });
+                    await _context.SaveChangesAsync(); // save immediately, one chunk at a time
+                    chunksCreated++;
+                }
             }
         }
         else
@@ -98,19 +139,17 @@ public class DocumentsController : ControllerBase
             // OCR fallback path: scanned PDF, process page-by-page, saving as we go.
             // startPage/endPage let an admin resume a large document across multiple
             // days if a daily API quota is hit partway through.
-            using var stream = file.OpenReadStream();
-            var pageImages = await _processingService.RasterizePdfPagesAsync(stream);
-
             var lastPage = Math.Min(endPage ?? pageImages.Count, pageImages.Count);
 
             for (int i = startPage; i < lastPage; i++)
             {
                 string pageText;
+                string? pageImageUrl;
                 try
                 {
                     using var pageStream = new MemoryStream(pageImages[i]);
                     var pageFileName = $"{Guid.NewGuid()}.jpg";
-                    var pageImageUrl = await _storageService.UploadDocumentAsync("syllabus-documents", pageFileName, pageStream, "image/jpeg");
+                    pageImageUrl = await _storageService.UploadDocumentAsync("syllabus-documents", pageFileName, pageStream, "image/jpeg");
                     pageText = await _aiProvider.ExtractTextFromImageAsync(pageImageUrl);
                 }
                 catch (Exception ex) when (ex.Message.Contains("tokens per day") || ex.Message.Contains("TPD"))
@@ -128,7 +167,7 @@ public class DocumentsController : ControllerBase
                     _context.DocumentChunks.Add(new DocumentChunk
                     {
                         SourceTitle = file.FileName, ChunkText = pageText, ChunkIndex = i,
-                        MathTopicId = topicId, Embedding = new Pgvector.Vector(embedding)
+                        MathTopicId = topicId, Embedding = new Pgvector.Vector(embedding), PageImageUrl = pageImageUrl
                     });
                     await _context.SaveChangesAsync(); // save this page immediately
                     chunksCreated++;

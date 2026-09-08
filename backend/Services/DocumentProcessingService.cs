@@ -16,6 +16,16 @@ public class DocumentProcessingService
         return text.ToString();
     }
 
+    // Same extraction as above, but keeps each page's text separate instead
+    // of flattening the document into one stream. Needed so a chunk can be
+    // tied back to the specific page (and therefore page image/diagram) it
+    // came from — ExtractTextFromPdf alone loses that boundary.
+    public List<string> ExtractTextPerPage(Stream pdfStream)
+    {
+        using var document = PdfDocument.Open(pdfStream);
+        return document.GetPages().Select(page => page.Text).ToList();
+    }
+
     // Splits text into overlapping word-count chunks. Overlap means each
     // chunk shares a few sentences with its neighbour, so an idea that
     // spans a chunk boundary doesn't get cut in half and lost from search.
