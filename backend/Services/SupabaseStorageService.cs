@@ -47,4 +47,34 @@ public class SupabaseStorageService
 
         return $"{supabaseUrl}/storage/v1/object/public/{bucket}/{fileName}";
     }
+
+    // Deletes a file given the public URL UploadDocumentAsync/UploadQuestionImageAsync
+    // returned — parses the bucket/path back out of it rather than requiring
+    // the caller to have kept those separately. Best-effort: a delete that
+    // fails (file already gone, transient network issue) shouldn't block
+    // whatever database cleanup the caller is doing alongside it.
+    public async Task DeleteFileByUrlAsync(string publicUrl)
+    {
+        const string marker = "/storage/v1/object/public/";
+        var markerIndex = publicUrl.IndexOf(marker, StringComparison.Ordinal);
+        if (markerIndex < 0) return; // not a recognizable Supabase Storage URL
+
+        var bucketAndPath = publicUrl[(markerIndex + marker.Length)..];
+        var supabaseUrl = _configuration["Supabase:Url"]!;
+        var serviceRoleKey = _configuration["Supabase:ServiceRoleKey"]!;
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"{supabaseUrl}/storage/v1/object/{bucketAndPath}");
+        request.Headers.Add("Authorization", $"Bearer {serviceRoleKey}");
+        request.Headers.Add("apikey", serviceRoleKey);
+
+        try
+        {
+            await _httpClient.SendAsync(request);
+        }
+        catch
+        {
+            // Non-fatal — an orphaned storage file is a much smaller problem
+            // than a delete that appears to fail from the admin's perspective.
+        }
+    }
 }

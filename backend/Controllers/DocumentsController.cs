@@ -204,6 +204,20 @@ public class DocumentsController : ControllerBase
         var chunks = await _context.DocumentChunks.Where(d => d.SourceTitle == sourceTitle).ToListAsync();
         if (chunks.Count == 0) return NotFound();
 
+        // Each page image is shared across every chunk from that page, so
+        // dedupe before deleting — otherwise the 2nd+ delete of the same
+        // URL just hits a 404 from Supabase (harmless, but wasted calls).
+        var imageUrls = chunks
+            .Select(c => c.PageImageUrl)
+            .Where(url => !string.IsNullOrEmpty(url))
+            .Distinct()
+            .ToList();
+
+        foreach (var url in imageUrls)
+        {
+            await _storageService.DeleteFileByUrlAsync(url!);
+        }
+
         _context.DocumentChunks.RemoveRange(chunks);
         await _context.SaveChangesAsync();
         return NoContent();
