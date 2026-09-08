@@ -19,12 +19,18 @@ interface RelatedResource {
   sourceType: string;
 }
 
+interface RelatedDiagram {
+  sourceTitle: string;
+  imageUrl: string;
+}
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'ai';
   text: string;
   relatedPastPapers?: RelatedPastPaper[];
   relatedResources?: RelatedResource[];
+  relatedDiagrams?: RelatedDiagram[];
 }
 
 interface ChatResponseDto {
@@ -32,6 +38,7 @@ interface ChatResponseDto {
   conversationId: number;
   relatedPastPapers: RelatedPastPaper[];
   relatedResources: RelatedResource[];
+  relatedDiagrams: RelatedDiagram[];
 }
 
 export function Tutor() {
@@ -97,6 +104,7 @@ export function Tutor() {
           text: result.reply,
           relatedPastPapers: result.relatedPastPapers,
           relatedResources: result.relatedResources,
+          relatedDiagrams: result.relatedDiagrams,
         },
       ]);
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -144,6 +152,7 @@ export function Tutor() {
         conversationId: number;
         relatedPastPapers: RelatedPastPaper[];
         relatedResources: RelatedResource[];
+        relatedDiagrams: RelatedDiagram[];
       }>('/api/Chat/image', {
         method: 'POST',
         body: formData,
@@ -158,6 +167,7 @@ export function Tutor() {
           text: result.reply,
           relatedPastPapers: result.relatedPastPapers,
           relatedResources: result.relatedResources,
+          relatedDiagrams: result.relatedDiagrams,
         },
       ]);
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -263,6 +273,26 @@ export function Tutor() {
                   iMath tutor
                 </div>
                 <div style={{ fontSize: 15, lineHeight: 1.75 }}><RenderedMessage text={m.text} /></div>
+
+                {m.relatedDiagrams && m.relatedDiagrams.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--color-text) 55%, transparent)', marginBottom: 6 }}>
+                      Related diagram
+                    </div>
+                    {m.relatedDiagrams.map((d) => (
+                      <figure key={d.imageUrl} style={{ margin: 0 }}>
+                        <img
+                          src={d.imageUrl}
+                          alt={`Diagram from ${d.sourceTitle}`}
+                          style={{ maxWidth: '100%', maxHeight: 320, borderRadius: 'var(--radius-md)', display: 'block' }}
+                        />
+                        <figcaption style={{ fontSize: 11.5, marginTop: 4, color: 'color-mix(in srgb, var(--color-text) 55%, transparent)' }}>
+                          From {d.sourceTitle}
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                )}
 
                 {((m.relatedResources && m.relatedResources.length > 0) || (m.relatedPastPapers && m.relatedPastPapers.length > 0)) && (
                   <div style={{ borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
